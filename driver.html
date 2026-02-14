@@ -1,164 +1,44 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haydovchi Paneli</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg-color: #f0f2f5;
-            --card-bg: #ffffff;
-            --primary: #0088cc;
-            --secondary: #34c759;
-            --text-main: #222;
-            --text-sub: #666;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 15px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 0 5px;
-        }
-
-        .header h1 { font-size: 20px; margin: 0; color: var(--text-main); }
-        .badge { background: var(--primary); color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
-
-        .order-card {
-            background: var(--card-bg);
-            border-radius: 18px;
-            padding: 18px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border: 1px solid #eef0f2;
-            position: relative;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .order-route {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .route-icons {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-right: 12px;
-        }
-
-        .dot { width: 8px; height: 8px; border-radius: 50%; }
-        .dot.from { background: var(--primary); }
-        .dot.to { background: var(--secondary); }
-        .line { width: 2px; height: 20px; background: #ddd; margin: 2px 0; }
-
-        .route-text div { font-size: 15px; font-weight: 600; color: var(--text-main); }
-        .route-text .to-loc { margin-top: 10px; }
-
-        .order-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            border-top: 1px solid #f0f2f5;
-            padding-top: 12px;
-            margin-bottom: 15px;
-        }
-
-        .info-item { font-size: 13px; color: var(--text-sub); }
-        .info-item span { display: block; color: var(--text-main); font-weight: 500; margin-top: 2px; }
-
-        .btn-accept {
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .btn-accept:active { transform: scale(0.97); background: #0077b3; }
-
-        .empty-state {
-            text-align: center;
-            margin-top: 100px;
-            color: #aaa;
-        }
+        body { font-family: sans-serif; background-color: #f4f4f9; padding: 15px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 20px; text-align: center; }
+        h2 { color: #333; }
+        .info { text-align: left; margin: 15px 0; font-size: 16px; }
+        .btn-call { background: #4CAF50; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; text-decoration: none; display: block; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Buyurtmalar</h1>
-        <span class="badge" id="order-count">0 ta yangi</span>
-    </div>
-
-    <div id="orders-list">
-        <div class="empty-state">Hozircha faol buyurtmalar yo'q...</div>
+    <h2>👨‍✈️ Haydovchi ish joyi</h2>
+    <div class="card">
+        <h3>Oxirgi buyurtma</h3>
+        <p id="no-order">Hozircha yangi buyurtma yo'q...</p>
+        <div id="order-box" style="display: none;">
+            <div class="info">
+                <strong>📍 Manzil:</strong> <span id="view-address"></span><br><br>
+                <strong>👤 Mijoz:</strong> <span id="view-name"></span>
+            </div>
+            <a href="#" id="call-link" class="btn-call">📞 Mijozga qo'ng'iroq qilish</a>
+        </div>
     </div>
 
     <script>
-        let tg = window.Telegram.WebApp;
+        const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Bu funksiya Botdan ma'lumot kelganda ishlaydi
-        function addOrder(id, from, to, client, phone) {
-            const list = document.getElementById('orders-list');
-            if(document.querySelector('.empty-state')) list.innerHTML = '';
-
-            const card = document.createElement('div');
-            card.className = 'order-card';
-            card.innerHTML = `
-                <div class="order-route">
-                    <div class="route-icons">
-                        <div class="dot from"></div>
-                        <div class="line"></div>
-                        <div class="dot to"></div>
-                    </div>
-                    <div class="route-text">
-                        <div>${from}</div>
-                        <div class="to-loc">${to}</div>
-                    </div>
-                </div>
-                <div class="order-info">
-                    <div class="info-item">👤 Mijoz: <span>${client}</span></div>
-                    <div class="info-item">📞 Tel: <span>${phone}</span></div>
-                </div>
-                <button class="btn-accept" onclick="acceptOrder('${id}')">✅ Qabul qilish</button>
-            `;
-            list.prepend(card);
-            updateCount();
-        }
-
-        function acceptOrder(id) {
-            // Haydovchi qabul qilganini botga yuboramiz
-            tg.sendData(JSON.stringify({action: "accept", order_id: id}));
+        // Diqqat! WebApp.sendData faqat mijozdan botga ma'lumot yuboradi.
+        // Haydovchi paneliga xabarni bot orqali kelgan xabardan olish eng yaxshisidir.
+        
+        // Bu yerda haydovchi o'z panelini sozlash imkoniyati bo'ladi.
+        function closePanel() {
             tg.close();
         }
-
-        function updateCount() {
-            const cards = document.querySelectorAll('.order-card').length;
-            document.getElementById('order-count').innerText = cards + " ta yangi";
-        }
-
-        // Test uchun (O'chirib tashlasangiz bo'ladi)
-        // addOrder("101", "Xonqiz", "Farg'ona", "Ali Valiev", "+998901234567");
     </script>
 </body>
+</html>
 </html>

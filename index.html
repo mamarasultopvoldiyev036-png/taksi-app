@@ -9,16 +9,20 @@
         .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h2 { color: #0088cc; text-align: center; margin-top: 0; margin-bottom: 20px; }
         label { font-weight: bold; display: block; margin-top: 15px; }
-        select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #fff; }
+        select, input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #fff; }
         
-        /* Qizil rangdagi "Majburiy emas" yozuvi uchun stil */
+        /* Qizil rangdagi "Majburiy emas" yozuvi */
         .optional { font-weight: bold; font-size: 13px; color: #ff0000; } 
         
+        /* Yashirin input uchun stil */
+        #other_address_input { display: none; border: 2px solid #0088cc; animation: fadeIn 0.3s; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         .loc-box { background: #f9f9f9; padding: 15px; border-radius: 10px; text-align: center; margin: 20px 0; border: 1px dashed #ccc; }
         #status { font-size: 13px; margin-bottom: 10px; display: block; color: #666; }
         .btn-loc { background: #28a745; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
         .btn-send { width: 100%; background: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 10px; }
-        .btn-send:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -38,7 +42,7 @@
         </select>
         
         <label>🏁 Qayerga: <span class="optional">(Majburiy emas)</span></label>
-        <select id="to">
+        <select id="to" onchange="checkOther(this.value)">
             <option value="Aytilmadi">-- Tanlang --</option>
             <option>Xonqiz</option>
             <option>Qo`rg`ontepa</option>
@@ -48,7 +52,10 @@
             <option>Farg'ona</option>
             <option>Vodil</option>
             <option>Mindon</option>
+            <option value="Boshqa">Boshqa...</option>
         </select>
+
+        <input type="text" id="other_address_input" placeholder="Borish joyingizni yozing...">
         
         <div class="loc-box">
             <span id="status">🗺 Lokatsiya aniqlanmagan</span>
@@ -62,6 +69,17 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
         let userCoords = { lat: 0, lon: 0 };
+
+        // "Boshqa..." tanlanganini tekshirish
+        function checkOther(val) {
+            let inputField = document.getElementById('other_address_input');
+            if (val === "Boshqa") {
+                inputField.style.display = "block";
+                inputField.focus();
+            } else {
+                inputField.style.display = "none";
+            }
+        }
 
         function getLocation() {
             document.getElementById('status').innerText = "⏳ Qidirilmoqda...";
@@ -80,11 +98,15 @@
 
         function sendOrder() {
             let from = document.getElementById('from').value;
-            let to = document.getElementById('to').value;
+            let toSelect = document.getElementById('to').value;
+            let toInput = document.getElementById('other_address_input').value;
+            
+            // Agar "Boshqa" tanlansa va yozilsa, o'sha yozuvni olamiz
+            let finalTo = (toSelect === "Boshqa") ? (toInput || "Boshqa (yozilmadi)") : toSelect;
             
             let resultData = {
                 from: from,
-                to: to,
+                to: finalTo,
                 lat: userCoords.lat,
                 lon: userCoords.lon
             };

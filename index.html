@@ -5,23 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; margin: 0; }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; margin: 0; color: #333; }
         .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { color: #0088cc; text-align: center; margin-top: 0; }
-        label { font-weight: bold; display: block; margin-top: 15px; color: #333; }
-        select, input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .optional { font-weight: normal; font-size: 12px; color: #888; }
-        .loc-box { background: #f9f9f9; padding: 10px; border-radius: 10px; text-align: center; margin: 15px 0; border: 1px dashed #ccc; }
-        #status { font-size: 13px; margin-bottom: 8px; display: block; }
+        h2 { color: #0088cc; text-align: center; margin-top: 0; margin-bottom: 20px; }
+        label { font-weight: bold; display: block; margin-top: 15px; }
+        select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #fff; }
+        .optional { font-weight: normal; font-size: 13px; color: #888; }
+        .loc-box { background: #f9f9f9; padding: 15px; border-radius: 10px; text-align: center; margin: 20px 0; border: 1px dashed #ccc; }
+        #status { font-size: 13px; margin-bottom: 10px; display: block; color: #666; }
         .btn-loc { background: #28a745; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
-        .btn-send { width: 100%; background: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 15px; }
+        .btn-send { width: 100%; background: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 10px; }
+        .btn-send:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>🚖 Taksi Buyurtma</h2>
         
-        <label>Qayerdan:</label>
+        <label>📍 Qayerdan:</label>
         <select id="from">
             <option>Xonqiz</option>
             <option>Qo`rg`ontepa</option>
@@ -33,12 +34,11 @@
             <option>Mindon</option>
         </select>
         
-        <label>Qayerga: <span class="optional">(Majburiy emas)</span></label>
-        <input type="text" id="to_custom" placeholder="Manzilni yozing yoki tanlang...">
-        <select id="to_select" onchange="document.getElementById('to_custom').value = this.value">
-            <option value="">-- Tanlang --</option>
+        <label>🏁 Qayerga: <span class="optional">(Majburiy emas)</span></label>
+        <select id="to">
+            <option value="Aytilmadi">-- Tanlang --</option>
             <option>Xonqiz</option>
-            <option>Qo'rg'ontepa</option>
+            <option>Qo`rg`ontepa</option>
             <option>Kon</option>
             <option>Langar</option>
             <option>Chimyon</option>
@@ -48,11 +48,11 @@
         </select>
         
         <div class="loc-box">
-            <span id="status">📍 Manzil aniqlanmagan</span>
-            <button class="btn-loc" onclick="getLocation()">Turgan joyimni aniqlash</button>
+            <span id="status">🗺 Lokatsiya aniqlanmagan</span>
+            <button class="btn-loc" onclick="getLocation()">📍 Turgan joyimni aniqlash</button>
         </div>
         
-        <button class="btn-send" onclick="sendOrder()">Buyurtma berish</button>
+        <button class="btn-send" onclick="sendOrder()">🚀 Buyurtma berish</button>
     </div>
 
     <script>
@@ -61,7 +61,7 @@
         let userCoords = { lat: 0, lon: 0 };
 
         function getLocation() {
-            document.getElementById('status').innerText = "Qidirilmoqda...";
+            document.getElementById('status').innerText = "⏳ Qidirilmoqda...";
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function(position) {
                     userCoords.lat = position.coords.latitude;
@@ -70,13 +70,14 @@
                     document.getElementById('status').style.color = "green";
                 }, function() {
                     document.getElementById('status').innerText = "❌ Ruxsat berilmadi";
+                    document.getElementById('status').style.color = "red";
                 });
             }
         }
 
         function sendOrder() {
             let from = document.getElementById('from').value;
-            let to = document.getElementById('to_custom').value || "Aytilmadi";
+            let to = document.getElementById('to').value;
             
             let resultData = {
                 from: from,
@@ -85,7 +86,10 @@
                 lon: userCoords.lon
             };
 
+            // Ma'lumotni yuborish
             tg.sendData(JSON.stringify(resultData));
+            
+            // Ilovani yopish
             tg.close();
         }
     </script>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #0088cc; text-align: center; }
+        select, input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; background: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🚖 Taxi Order</h2>
+        <label>Qayerdan:</label>
+        <select id="from">
+            <option>Xonqiz</option>
+            <option>Qo`rg`ontepa</option>
+            <option>Chimyon</option>
+            <option>Mindon</option>
+        </select>
+        
+        <label>Qayerga:</label>
+        <input type="text" id="to" placeholder="Manzilni yozing...">
+        
+        <button onclick="sendOrder()">Buyurtma berish</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Ilovani to'liq ekranda ochish
+
+        function sendOrder() {
+            let from = document.getElementById('from').value;
+            let to = document.getElementById('to').value;
+            
+            let data = {
+                from: from,
+                to: to
+            };
+            
+            tg.sendData(JSON.stringify(data)); // Ma'lumotni botga yuborish
+            tg.close(); // Ilovani yopish
+        }
+    </script>
+</body>
+</html>

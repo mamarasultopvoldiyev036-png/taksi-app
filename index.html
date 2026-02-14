@@ -2,33 +2,55 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; padding: 20px; margin: 0; }
         .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h2 { color: #0088cc; text-align: center; margin-top: 0; }
-        select, input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .loc-status { font-size: 13px; color: #666; text-align: center; margin-bottom: 5px; display: block; }
-        .btn-loc { background: #28a745; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; cursor: pointer; font-weight: bold; }
-        .btn-send { width: 100%; background: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; }
+        label { font-weight: bold; display: block; margin-top: 15px; color: #333; }
+        select, input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .optional { font-weight: normal; font-size: 12px; color: #888; }
+        .loc-box { background: #f9f9f9; padding: 10px; border-radius: 10px; text-align: center; margin: 15px 0; border: 1px dashed #ccc; }
+        #status { font-size: 13px; margin-bottom: 8px; display: block; }
+        .btn-loc { background: #28a745; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
+        .btn-send { width: 100%; background: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>🚖 Taksi Buyurtma</h2>
+        
         <label>Qayerdan:</label>
         <select id="from">
             <option>Xonqiz</option>
             <option>Qo`rg`ontepa</option>
+            <option>Kon</option>
+            <option>Langar</option>
             <option>Chimyon</option>
+            <option>Farg'ona</option>
+            <option>Vodil</option>
             <option>Mindon</option>
         </select>
         
-        <label>Qayerga:</label>
-        <input type="text" id="to" placeholder="Manzilni yozing...">
+        <label>Qayerga: <span class="optional">(Majburiy emas)</span></label>
+        <input type="text" id="to_custom" placeholder="Manzilni yozing yoki tanlang...">
+        <select id="to_select" onchange="document.getElementById('to_custom').value = this.value">
+            <option value="">-- Tanlang --</option>
+            <option>Xonqiz</option>
+            <option>Qo'rg'ontepa</option>
+            <option>Kon</option>
+            <option>Langar</option>
+            <option>Chimyon</option>
+            <option>Farg'ona</option>
+            <option>Vodil</option>
+            <option>Mindon</option>
+        </select>
         
-        <span class="loc-status" id="status">Lokatsiya aniqlanmagan</span>
-        <button class="btn-loc" onclick="getLocation()">📍 Turgan joyimni aniqlash</button>
+        <div class="loc-box">
+            <span id="status">📍 Manzil aniqlanmagan</span>
+            <button class="btn-loc" onclick="getLocation()">Turgan joyimni aniqlash</button>
+        </div>
         
         <button class="btn-send" onclick="sendOrder()">Buyurtma berish</button>
     </div>
@@ -36,30 +58,34 @@
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-        let coords = "Aniqmas";
+        let userCoords = { lat: 0, lon: 0 };
 
         function getLocation() {
             document.getElementById('status').innerText = "Qidirilmoqda...";
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                document.getElementById('status').innerText = "✅ Lokatsiya aniqlandi";
-                document.getElementById('status').style.color = "green";
-            }, function() {
-                document.getElementById('status').innerText = "❌ Ruxsat berilmadi";
-            });
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    userCoords.lat = position.coords.latitude;
+                    userCoords.lon = position.coords.longitude;
+                    document.getElementById('status').innerText = "✅ Lokatsiya aniqlandi";
+                    document.getElementById('status').style.color = "green";
+                }, function() {
+                    document.getElementById('status').innerText = "❌ Ruxsat berilmadi";
+                });
+            }
         }
 
         function sendOrder() {
             let from = document.getElementById('from').value;
-            let to = document.getElementById('to').value;
+            let to = document.getElementById('to_custom').value || "Aytilmadi";
             
-            let data = {
+            let resultData = {
                 from: from,
                 to: to,
-                loc: coords
+                lat: userCoords.lat,
+                lon: userCoords.lon
             };
-            
-            tg.sendData(JSON.stringify(data)); // FAQAT Klaviatura tugmasidan ochilganda ishlaydi
+
+            tg.sendData(JSON.stringify(resultData));
             tg.close();
         }
     </script>

@@ -10,7 +10,10 @@
         h2 { color: #0088cc; text-align: center; margin-top: 0; margin-bottom: 20px; }
         label { font-weight: bold; display: block; margin-top: 15px; }
         select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #fff; }
-        .optional { font-weight: normal; font-size: 13px; color: #888; }
+        
+        /* Qizil rangdagi "Majburiy emas" yozuvi uchun stil */
+        .optional { font-weight: bold; font-size: 13px; color: #ff0000; } 
+        
         .loc-box { background: #f9f9f9; padding: 15px; border-radius: 10px; text-align: center; margin: 20px 0; border: 1px dashed #ccc; }
         #status { font-size: 13px; margin-bottom: 10px; display: block; color: #666; }
         .btn-loc { background: #28a745; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
@@ -86,10 +89,7 @@
                 lon: userCoords.lon
             };
 
-            // Ma'lumotni yuborish
             tg.sendData(JSON.stringify(resultData));
-            
-            // Ilovani yopish
             tg.close();
         }
     </script>

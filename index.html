@@ -1,33 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; margin: 0; color: #333; }
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { color: #0088cc; text-align: center; margin-top: 0; margin-bottom: 20px; }
-        label { font-weight: bold; display: block; margin-top: 15px; }
-        select, input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #fff; }
-        
-        /* Qizil rangdagi "Majburiy emas" yozuvi */
-        .optional { font-weight: bold; font-size: 13px; color: #ff0000; } 
-        
-        /* Yashirin input uchun stil */
-        #other_address_input { display: none; border: 2px solid #0088cc; animation: fadeIn 0.3s; }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        :root {
+            --tg-theme-bg: #f4f7f9;
+            --main-gradient: linear-gradient(135deg, #0088cc 0%, #00aaff 100%);
+            --accent-color: #0088cc;
+            --danger-color: #ff3b30;
+            --success-color: #34c759;
+        }
 
-        .loc-box { background: #f9f9f9; padding: 15px; border-radius: 10px; text-align: center; margin: 20px 0; border: 1px dashed #ccc; }
-        #status { font-size: 13px; margin-bottom: 10px; display: block; color: #666; }
-        .btn-loc { background: #28a745; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
-        .btn-send { width: 100%; background: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 10px; }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            -webkit-user-select: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h2 {
+            margin: 0;
+            color: #222;
+            font-size: 24px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #777;
+            margin: 5px 0 0;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+            color: #444;
+            margin-top: 15px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 14px;
+            border: 1.5px solid #eef0f2;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fdfdfd;
+            outline: none;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(0,136,204,0.1);
+        }
+
+        .optional {
+            color: var(--danger-color);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* "Boshqa" inputi uchun maxsus effekt */
+        #other_address_input {
+            display: none;
+            margin-top: 10px;
+            border: 2px solid #0088cc;
+            background: #fff;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loc-section {
+            background: #f9fbff;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #e1e8f0;
+            text-align: center;
+        }
+
+        #status {
+            font-size: 13px;
+            margin-bottom: 10px;
+            display: block;
+            font-weight: 500;
+        }
+
+        .btn-loc {
+            background: white;
+            color: var(--success-color);
+            border: 1.5px solid var(--success-color);
+            padding: 10px;
+            border-radius: 10px;
+            width: 100%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn-loc:active {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-send {
+            width: 100%;
+            background: var(--main-gradient);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,136,204,0.3);
+            transition: 0.3s;
+        }
+
+        .btn-send:active {
+            transform: scale(0.96);
+            box-shadow: 0 2px 8px rgba(0,136,204,0.2);
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>🚖 Taksi Buyurtma</h2>
+    <div class="container">
+        <div class="header">
+            <h2>🚖 Online Taksi</h2>
+            <p>Xizmatingizga tayyormiz</p>
+        </div>
         
         <label>📍 Qayerdan:</label>
         <select id="from">
@@ -43,7 +177,7 @@
         
         <label>🏁 Qayerga: <span class="optional">(Majburiy emas)</span></label>
         <select id="to" onchange="checkOther(this.value)">
-            <option value="Aytilmadi">-- Tanlang --</option>
+            <option value="Aytilmadi">-- Manzilni tanlang --</option>
             <option>Xonqiz</option>
             <option>Qo`rg`ontepa</option>
             <option>Kon</option>
@@ -52,25 +186,28 @@
             <option>Farg'ona</option>
             <option>Vodil</option>
             <option>Mindon</option>
-            <option value="Boshqa">Boshqa...</option>
+            <option value="Boshqa">✍️ Boshqa joyni yozish...</option>
         </select>
 
-        <input type="text" id="other_address_input" placeholder="Borish joyingizni yozing...">
+        <input type="text" id="other_address_input" placeholder="Manzilni aniq kiriting...">
         
-        <div class="loc-box">
-            <span id="status">🗺 Lokatsiya aniqlanmagan</span>
-            <button class="btn-loc" onclick="getLocation()">📍 Turgan joyimni aniqlash</button>
+        <div class="loc-section">
+            <span id="status">📡 Geopozitsiya aniqlanmagan</span>
+            <button class="btn-loc" onclick="getLocation()">📍 Joylashuvni ulashish</button>
         </div>
         
-        <button class="btn-send" onclick="sendOrder()">🚀 Buyurtma berish</button>
+        <button class="btn-send" onclick="sendOrder()">🚀 BUYURTMA BERISH</button>
+        
+        <div class="footer-note">Tezkor va xavfsiz xizmat ko'rsatish markazi</div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
+        tg.headerColor = '#f4f7f9';
+        
         let userCoords = { lat: 0, lon: 0 };
 
-        // "Boshqa..." tanlanganini tekshirish
         function checkOther(val) {
             let inputField = document.getElementById('other_address_input');
             if (val === "Boshqa") {
@@ -82,16 +219,19 @@
         }
 
         function getLocation() {
-            document.getElementById('status').innerText = "⏳ Qidirilmoqda...";
+            let status = document.getElementById('status');
+            status.innerText = "⏳ Qidirilmoqda...";
+            status.style.color = "#0088cc";
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function(position) {
                     userCoords.lat = position.coords.latitude;
                     userCoords.lon = position.coords.longitude;
-                    document.getElementById('status').innerText = "✅ Lokatsiya aniqlandi";
-                    document.getElementById('status').style.color = "green";
+                    status.innerText = "✅ Joylashuv aniqlandi";
+                    status.style.color = "#34c759";
                 }, function() {
-                    document.getElementById('status').innerText = "❌ Ruxsat berilmadi";
-                    document.getElementById('status').style.color = "red";
+                    status.innerText = "❌ Ruxsat berilmadi";
+                    status.style.color = "#ff3b30";
                 });
             }
         }
@@ -101,7 +241,6 @@
             let toSelect = document.getElementById('to').value;
             let toInput = document.getElementById('other_address_input').value;
             
-            // Agar "Boshqa" tanlansa va yozilsa, o'sha yozuvni olamiz
             let finalTo = (toSelect === "Boshqa") ? (toInput || "Boshqa (yozilmadi)") : toSelect;
             
             let resultData = {

@@ -4,21 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
-        .card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; margin: 0; }
+        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h2 { color: #0088cc; text-align: center; margin-top: 0; }
-        select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        #map { height: 250px; width: 100%; border-radius: 10px; margin: 10px 0; border: 1px solid #ccc; }
-        button { width: 100%; background: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
-        .hint { font-size: 12px; color: #666; text-align: center; margin-bottom: 5px; }
+        select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .loc-box { background: #e7f3ff; padding: 15px; border-radius: 10px; text-align: center; margin: 15px 0; border: 1px dashed #0088cc; }
+        .status { font-size: 14px; color: #555; margin-bottom: 10px; display: block; }
+        .btn-loc { background: #28a745; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        .btn-order { width: 100%; background: #0088cc; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; }
+        .btn-order:disabled { background: #ccc; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>🚖 Taksi Buyurtma</h2>
+        <h2>🚖 Tezkor Taksi</h2>
         
         <label>Qayerdan:</label>
         <select id="from">
@@ -28,44 +28,55 @@
             <option>Mindon</option>
         </select>
         
-        <label>Qayerga (Xaritadan tanlang):</label>
-        <p class="hint">Xaritani suring va manzilni belgilang</p>
-        <div id="map"></div>
+        <div class="loc-box">
+            <span class="status" id="status">Lokatsiya aniqlanmagan</span>
+            <button class="btn-loc" onclick="getLocation()">📍 Turgan joyimni aniqlash</button>
+        </div>
         
-        <button onclick="sendOrder()">Buyurtma berish</button>
+        <button class="btn-order" id="orderBtn" onclick="sendOrder()" disabled>Buyurtma berish</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Xaritani sozlash (O'zbekiston markazi bo'yicha)
-        var map = L.map('map').setView([40.3833, 71.7833], 13); 
+        let userCoords = null;
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        // Markerni xarita markazida yaratish
-        var marker = L.marker([40.3833, 71.7833], {draggable: true}).addTo(map);
-
-        // Xarita bosilganda markerni o'sha yerga ko'chirish
-        map.on('click', function(e) {
-            marker.setLatLng(e.latlng);
-        });
+        function getLocation() {
+            document.getElementById('status').innerText = "Qidirilmoqda...";
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    userCoords = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+                    document.getElementById('status').innerText = "✅ Lokatsiya aniqlandi!";
+                    document.getElementById('status').style.color = "green";
+                    document.getElementById('orderBtn').disabled = false; // Tugmani yoqish
+                }, function(error) {
+                    document.getElementById('status').innerText = "❌ Ruxsat berilmadi";
+                    document.getElementById('status').style.color = "red";
+                    alert("Iltimos, lokatsiya aniqlashga ruxsat bering!");
+                });
+            } else {
+                alert("Brauzeringiz lokatsiyani qo'llab-quvvatlamaydi.");
+            }
+        }
 
         function sendOrder() {
+            if (!userCoords) return;
+
             let from = document.getElementById('from').value;
-            let location = marker.getLatLng(); // Tanlangan koordinatalar
             
             let data = {
                 from: from,
-                lat: location.lat.toFixed(6),
-                lon: location.lng.toFixed(6),
-                map_url: `https://www.google.com/maps?q=${location.lat},${location.lng}`
+                lat: userCoords.lat,
+                lon: userCoords.lon,
+                google_maps: `https://www.google.com/maps?q=${userCoords.lat},${userCoords.lon}`
             };
             
-            tg.sendData(JSON.stringify(data)); // Botga yuborish
+            tg.sendData(JSON.stringify(data)); 
             tg.close();
         }
     </script>

@@ -32,14 +32,15 @@
             <button class="btn-loc" onclick="getLocation()">Turgan joyimni aniqlash</button>
         </div>
         
-        <button class="btn-order" onclick="sendOrder()">Buyurtma berish</button>
+        <button class="btn-order" id="mainButton" onclick="sendOrder()">Buyurtma berish</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
+        tg.ready(); // Ilova tayyorligini bildirish
 
-        let userCoords = "Aniqlanmadi";
+        let userCoords = null;
 
         function getLocation() {
             document.getElementById('status').innerText = "Qidirilmoqda...";
@@ -54,29 +55,31 @@
                     document.getElementById('status').style.color = "green";
                 }, function(error) {
                     document.getElementById('status').innerText = "❌ Ruxsat berilmadi";
-                    alert("Iltimos, telefon sozlamalaridan lokatsiyaga ruxsat bering");
+                    alert("Lokatsiya aniqlash uchun ruxsat bering!");
                 }, { enableHighAccuracy: true });
             } else {
-                alert("Brauzeringiz lokatsiyani qo'llab-quvvatlamaydi.");
+                alert("Brauzer lokatsiyani qo'llab-quvvatlamaydi.");
             }
         }
 
         function sendOrder() {
             let from = document.getElementById('from').value;
             
-            // Agar lokatsiya aniqlanmagan bo'lsa ham xabar yuborishi uchun:
             let resultData = {
                 from: from,
-                location: userCoords
+                lat: userCoords ? userCoords.lat : "Aniqlanmadi",
+                lon: userCoords ? userCoords.lon : "Aniqlanmadi"
             };
 
-            // Telegramga ma'lumotni yuborish
-            tg.sendData(JSON.stringify(resultData));
-            
-            // Agar sendData ishlamasa (Inline button bo'lsa), yopilishidan oldin ogohlantirish:
-            setTimeout(() => {
+            try {
+                // Ma'lumotni JSON string qilib yuborish
+                tg.sendData(JSON.stringify(resultData));
+                
+                // Ilovani darhol yopish
                 tg.close();
-            }, 500);
+            } catch (e) {
+                alert("Xatolik: Ma'lumot yuborib bo'lmadi. Menu tugmasidan foydalaning.");
+            }
         }
     </script>
 </body>

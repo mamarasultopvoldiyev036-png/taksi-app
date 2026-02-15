@@ -1,69 +1,163 @@
 <!DOCTYPE html>
-<html>
+<html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Haydovchi Paneli</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 10px; }
-        .order-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-accept { background: #28a745; color: white; }
-        .btn-finish { background: #dc3545; color: white; }
-        .status-tag { font-size: 12px; padding: 4px 8px; border-radius: 4px; float: right; }
-        .pending { background: #fff3cd; color: #856404; }
-        .accepted { background: #d4edda; color: #155724; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+        h2 { text-align: center; color: #2c3e50; }
+        
+        #orders-container { margin-top: 20px; }
+
+        .order-card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-left: 5px solid #ffc107; /* Pending status uchun sariq */
+        }
+
+        .order-card.accepted { border-left-color: #28a745; } /* Qabul qilingan uchun yashil */
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .info { font-size: 14px; margin: 5px 0; }
+        .price { font-size: 18px; color: #2ecc71; font-weight: bold; }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+
+        .btn-accept { background-color: #28a745; color: white; }
+        .btn-finish { background-color: #e74c3c; color: white; }
+        
+        .no-orders {
+            text-align: center;
+            margin-top: 50px;
+            color: #888;
+        }
+
+        /* Yuklanish effekti */
+        .loader { text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
-    <h3>🚖 Aktiv buyurtmalar</h3>
-    <div id="orders-list">
-        </div>
+
+    <h2>🚖 Aktiv Buyurtmalar</h2>
+    <div id="orders-container">
+        <div class="loader">Yuklanmoqda...</div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
+        tg.expand(); // Web App-ni to'liq ekranga yoyish
+        tg.ready();
 
-        // Bazadan zakazlarni olish (Sizning API manzilingiz bo'lishi kerak)
-        async function loadOrders() {
-            const response = await fetch('https://sizning-api.com/get_orders');
-            const orders = await response.json();
-            const list = document.getElementById('orders-list');
-            list.innerHTML = '';
+        const API_URL = "https://sizning-api-manzilingiz.com"; // O'zingizning API manzilingizni yozing
+        const driverId = tg.initDataUnsafe.user.id;
+
+        // 1. Buyurtmalarni bazadan yuklab olish
+        async function fetchOrders() {
+            try {
+                // API-dan barcha ochiq va shu haydovchiga tegishli zakazlarni olamiz
+                const response = await fetch(`${API_URL}/get_orders`);
+                const orders = await response.json();
+                renderOrders(orders);
+            } catch (error) {
+                console.error("Xatolik:", error);
+                document.getElementById('orders-container').innerHTML = '<p class="no-orders">Maʼlumot olishda xatolik yuz berdi.</p>';
+            }
+        }
+
+        // 2. Buyurtmalarni ekranga chiqarish (HTML hosil qilish)
+        function renderOrders(orders) {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = '';
+
+            if (orders.length === 0) {
+                container.innerHTML = '<p class="no-orders">Hozircha yangi buyurtmalar yo‘q...</p>';
+                return;
+            }
 
             orders.forEach(order => {
-                const div = document.createElement('div');
-                div.className = 'order-card';
-                div.innerHTML = `
-                    <span class="status-tag ${order.status}">${order.status}</span>
-                    <p>📍 <b>Dan:</b> ${order.from_addr}</p>
-                    <p>🏁 <b>Gacha:</b> ${order.to_addr}</p>
-                    <p>💰 <b>Narxi:</b> ${order.price} so'm</p>
-                    ${order.status === 'pending' 
-                        ? `<button class="btn btn-accept" onclick="updateStatus(${order.id}, 'accepted')">Qabul qilish</button>` 
-                        : `<button class="btn btn-finish" onclick="updateStatus(${order.id}, 'finished')">Tugatish</button>`
-                    }
-                `;
-                list.appendChild(div);
+                // Faqat hamma uchun ochiq (pending) yoki shu haydovchi qabul qilgan (accepted) zakazni ko'rsatish
+                if (order.status === 'pending' || (order.status === 'accepted' && order.driver_id == driverId)) {
+                    const card = document.createElement('div');
+                    card.className = `order-card ${order.status}`;
+                    
+                    card.innerHTML = `
+                        <div class="order-header">
+                            <span>ID: #${order.id}</span>
+                            <span class="price">${order.price} so'm</span>
+                        </div>
+                        <div class="info">📍 <b>Qayerdan:</b> ${order.from_addr}</div>
+                        <div class="info">🏁 <b>Qayerga:</b> ${order.to_addr}</div>
+                        ${order.status === 'pending' 
+                            ? `<button class="btn btn-accept" onclick="updateStatus(${order.id}, 'accepted')">Qabul qilish</button>`
+                            : `<button class="btn btn-finish" onclick="updateStatus(${order.id}, 'finished')">Tugatish</button>`
+                        }
+                    `;
+                    container.appendChild(card);
+                }
             });
         }
 
+        // 3. Statusni yangilash (Qabul qilish yoki Tugatish)
         async function updateStatus(orderId, newStatus) {
-            const driverId = tg.initDataUnsafe.user.id;
-            await fetch('https://sizning-api.com/update_order', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ order_id: orderId, status: newStatus, driver_id: driverId })
-            });
-            
-            // Botga ma'lumot yuborish (Mijozni ogohlantirish uchun)
-            tg.sendData(JSON.stringify({action: newStatus, order_id: orderId}));
-            loadOrders(); // Ro'yxatni yangilash
+            try {
+                const response = await fetch(`${API_URL}/update_order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        order_id: orderId,
+                        status: newStatus,
+                        driver_id: driverId
+                    })
+                });
+
+                if (response.ok) {
+                    // Telegram botga signal yuborish (Bot buni ContentType.WEB_APP_DATA orqali ushlaydi)
+                    tg.sendData(JSON.stringify({
+                        action: newStatus,
+                        order_id: orderId
+                    }));
+                    
+                    // Ro'yxatni yangilash
+                    fetchOrders();
+                }
+            } catch (error) {
+                alert("Xatolik yuz berdi. Internetni tekshiring.");
+            }
         }
 
-        setInterval(loadOrders, 5000); // Har 5 soniyada yangilab turadi
-        loadOrders();
+        // Har 5 soniyada yangi zakazlar borligini tekshirib turish
+        setInterval(fetchOrders, 5000);
+        
+        // Birinchi marta yuklash
+        fetchOrders();
+
     </script>
 </body>
 </html>

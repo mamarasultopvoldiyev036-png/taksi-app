@@ -1,44 +1,69 @@
-<!DOCTYPE html><!DOCTYPE html>
-<html lang="uz">
+<!DOCTYPE html>
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Haydovchi Paneli</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background-color: #f4f4f9; padding: 15px; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 20px; text-align: center; }
-        h2 { color: #333; }
-        .info { text-align: left; margin: 15px 0; font-size: 16px; }
-        .btn-call { background: #4CAF50; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; text-decoration: none; display: block; }
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 10px; }
+        .order-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-accept { background: #28a745; color: white; }
+        .btn-finish { background: #dc3545; color: white; }
+        .status-tag { font-size: 12px; padding: 4px 8px; border-radius: 4px; float: right; }
+        .pending { background: #fff3cd; color: #856404; }
+        .accepted { background: #d4edda; color: #155724; }
     </style>
 </head>
 <body>
-    <h2>👨‍✈️ Haydovchi ish joyi</h2>
-    <div class="card">
-        <h3>Oxirgi buyurtma</h3>
-        <p id="no-order">Hozircha yangi buyurtma yo'q...</p>
-        <div id="order-box" style="display: none;">
-            <div class="info">
-                <strong>📍 Manzil:</strong> <span id="view-address"></span><br><br>
-                <strong>👤 Mijoz:</strong> <span id="view-name"></span>
-            </div>
-            <a href="#" id="call-link" class="btn-call">📞 Mijozga qo'ng'iroq qilish</a>
+    <h3>🚖 Aktiv buyurtmalar</h3>
+    <div id="orders-list">
         </div>
-    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Diqqat! WebApp.sendData faqat mijozdan botga ma'lumot yuboradi.
-        // Haydovchi paneliga xabarni bot orqali kelgan xabardan olish eng yaxshisidir.
-        
-        // Bu yerda haydovchi o'z panelini sozlash imkoniyati bo'ladi.
-        function closePanel() {
-            tg.close();
+        // Bazadan zakazlarni olish (Sizning API manzilingiz bo'lishi kerak)
+        async function loadOrders() {
+            const response = await fetch('https://sizning-api.com/get_orders');
+            const orders = await response.json();
+            const list = document.getElementById('orders-list');
+            list.innerHTML = '';
+
+            orders.forEach(order => {
+                const div = document.createElement('div');
+                div.className = 'order-card';
+                div.innerHTML = `
+                    <span class="status-tag ${order.status}">${order.status}</span>
+                    <p>📍 <b>Dan:</b> ${order.from_addr}</p>
+                    <p>🏁 <b>Gacha:</b> ${order.to_addr}</p>
+                    <p>💰 <b>Narxi:</b> ${order.price} so'm</p>
+                    ${order.status === 'pending' 
+                        ? `<button class="btn btn-accept" onclick="updateStatus(${order.id}, 'accepted')">Qabul qilish</button>` 
+                        : `<button class="btn btn-finish" onclick="updateStatus(${order.id}, 'finished')">Tugatish</button>`
+                    }
+                `;
+                list.appendChild(div);
+            });
         }
+
+        async function updateStatus(orderId, newStatus) {
+            const driverId = tg.initDataUnsafe.user.id;
+            await fetch('https://sizning-api.com/update_order', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ order_id: orderId, status: newStatus, driver_id: driverId })
+            });
+            
+            // Botga ma'lumot yuborish (Mijozni ogohlantirish uchun)
+            tg.sendData(JSON.stringify({action: newStatus, order_id: orderId}));
+            loadOrders(); // Ro'yxatni yangilash
+        }
+
+        setInterval(loadOrders, 5000); // Har 5 soniyada yangilab turadi
+        loadOrders();
     </script>
 </body>
-</html>
 </html>

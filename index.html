@@ -2,18 +2,19 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tezkor Taksi</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
-            --accent: #f1c40f; /* Oltin rang */
+            --accent: #f1c40f;
             --bg: #121212;
             --card: #1e1e1e;
             --input: #2a2a2a;
             --text: #ffffff;
+            --danger: #ff4757;
         }
 
         body { 
@@ -22,6 +23,7 @@
             background-color: var(--bg); 
             color: var(--text);
             display: flex; justify-content: center;
+            overflow-x: hidden;
         }
 
         .app-container {
@@ -39,13 +41,13 @@
         }
 
         header h1 {
-            margin: 0; font-size: 24px; color: var(--accent);
+            margin: 0; font-size: 22px; color: var(--accent);
             text-transform: uppercase; letter-spacing: 2px;
             font-weight: 900;
         }
 
         #map {
-            height: 200px; width: calc(100% - 30px);
+            height: 250px; width: calc(100% - 30px);
             margin: 15px; border-radius: 15px;
             border: 1px solid #333;
             z-index: 1;
@@ -58,6 +60,7 @@
             padding: 12px; border-radius: 12px;
             margin-bottom: 20px; font-size: 13px;
             border-left: 4px solid var(--accent);
+            display: flex; align-items: center;
         }
 
         .input-group { 
@@ -71,9 +74,14 @@
             font-size: 15px; font-weight: 600;
         }
 
-        .optional { color: #ff4757; font-size: 12px; font-weight: normal; margin-left: 5px; }
+        .optional { 
+            color: var(--danger); 
+            font-size: 12px; 
+            font-weight: normal; 
+            margin-left: 5px; 
+        }
 
-        select, input {
+        input {
             width: 100%; padding: 14px;
             background: var(--input); border: 1px solid #444;
             border-radius: 12px; color: white;
@@ -81,16 +89,11 @@
             box-sizing: border-box;
         }
 
-        select:focus, input:focus { border-color: var(--accent); }
-
-        #custom_destination { 
-            display: none; margin-top: 15px; 
-            border: 1px dashed var(--accent);
-        }
+        input:focus { border-color: var(--accent); }
 
         .footer {
             margin-top: auto; padding: 20px;
-            background: var(--bg);
+            padding-bottom: 30px;
         }
 
         .btn-order {
@@ -100,123 +103,95 @@
             font-size: 18px; font-weight: 800;
             text-transform: uppercase; cursor: pointer;
             box-shadow: 0 6px 20px rgba(241, 196, 15, 0.3);
-            transition: 0.2s;
         }
-
-        .btn-order:active { transform: scale(0.97); }
-        .btn-order:disabled { background: #444; color: #777; box-shadow: none; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <header>
-        <h1>⚡️ Tezkor Taksi</h1>
-    </header>
-
+    <header><h1>⚡️ TEZKOR TAKSI</h1></header>
     <div id="map"></div>
-
     <div class="content">
         <div class="status-card">
-            <span id="status">📍 Lokatsiya aniqlanmoqda...</span>
+            📍&nbsp;<span id="status">Lokatsiya aniqlanmoqda...</span>
         </div>
         <div class="input-group">
-            <label>Qayerga borasiz? <span class="optional">(majburiy emas)</span></label>
-            <select id="destination_select" onchange="toggleOwn()">
-                <option value="Boshqa">Boshqa</option>
-                <option value="Xonqiz">Xonqiz</option>
-                <option value="Chimyon">Chimyon</option>
-                <option value="Mindon">Mindon</option>
-                <option value="Konchilar">Konchilar</option>
-                <option value="Qo'rg'ontepa">Qo'rg'ontepa</option>
-                <option value="Langar">Langar</option>
-                <option value="WRITE_OWN">Boshqa (o'zingiz kiriting)</option>
-            </select>
-            <input type="text" id="custom_destination" placeholder="Manzilni shu yerga yozing...">
+            <label>🏁 Qayerga borasiz? <span class="optional">(majburiy emas)</span></label>
+            <input type="text" id="destination" placeholder="Manzilni yozing...">
         </div>
-    </div>
-
-    <div class="footer">
-        <button id="send_btn" class="btn-order" disabled>Buyurtma berish</button>
+        <div class="footer">
+            <button class="btn-order" id="order_btn">🚖 Buyurtma berish</button>
+        </div>
     </div>
 </div>
 
 <script>
     let tg = window.Telegram.WebApp;
     tg.expand();
-    tg.headerColor = "#1e1e1e";
 
-    let userLat, userLon, addressName = "Aniqlanmadi";
-    let map, marker;
+    let userLat = 41.311081;
+    let userLon = 69.240562;
+    let addressName = "Aniqlanmagan manzil";
 
-    function toggleOwn() {
-        const select = document.getElementById('destination_select');
-        const custom = document.getElementById('custom_destination');
-        if (select.value === "WRITE_OWN") {
-            custom.style.display = "block";
-            custom.focus();
-        } else {
-            custom.style.display = "none";
+    // Xarita sozlamalari (scroll va zoom yaxshilandi)
+    var map = L.map('map', {
+        center: [userLat, userLon],
+        zoom: 13,
+        zoomControl: false
+    });
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var marker = L.marker([userLat, userLon], {draggable: true}).addTo(map);
+
+    async function reverseGeocode(lat, lon) {
+        try {
+            document.getElementById('status').innerText = "Manzil aniqlanmoqda...";
+            let res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            let data = await res.json();
+            addressName = data.display_name || "Noma'lum hudud";
+            document.getElementById('status').innerText = addressName;
+        } catch (e) {
+            document.getElementById('status').innerText = "Xaritadan tanlandi";
         }
     }
 
-    function initMap(lat, lon) {
-        if (!map) {
-            map = L.map('map', {zoomControl: false}).setView([lat, lon], 16);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            marker = L.marker([lat, lon]).addTo(map);
-        } else {
-            map.setView([lat, lon], 16);
-            marker.setLatLng([lat, lon]);
-        }
-    }
+    marker.on('dragend', function() {
+        let pos = marker.getLatLng();
+        userLat = pos.lat; userLon = pos.lng;
+        reverseGeocode(userLat, userLon);
+    });
 
-    window.onload = function() {
+    // LOKATSIYANI TOPISHNI YAXSHILANGAN VARIANTI
+    function findMe() {
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                userLat = pos.coords.latitude;
-                userLon = pos.coords.longitude;
-                initMap(userLat, userLon);
-
-                try {
-                    const res = await fetch(https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&addressdetails=1, {
-                        headers: {'Accept-Language': 'uz'}
-                    });
-                    const data = await res.json();
-                    const a = data.address;
-                    let p = [];
-                    // Aniqroq manzil qismlari
-                    if(a.amenity  a.school  a.building  a.hospital) p.push(a.amenity  a.school  a.building  a.hospital);
-                    if(a.village  a.suburb  a.hamlet) p.push(a.village  a.suburb  a.hamlet);
-                    if(a.road) p.push(a.road);
-                    
-                    addressName = p.length > 0 ? p.join(", ") : "GPS nuqtasi";
-                    document.getElementById('status').innerHTML = "✅ <b>Siz turgan joy:</b> " + addressName;
-                    document.getElementById('send_btn').disabled = false;
-                } catch (e) {
-                    addressName = "Noma'lum qishloq";
-                    document.getElementById('status').innerText = "✅ Joylashuv aniqlandi";
-                    document.getElementById('send_btn').disabled = false;
-                }
-            }, (err) => {
-                document.getElementById('status').innerText = "❌ GPS ruxsati berilmadi";
-            }, {enableHighAccuracy: true});
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLat = position.coords.latitude;
+                    userLon = position.coords.longitude;
+                    map.setView([userLat, userLon], 16);
+                    marker.setLatLng([userLat, userLon]);
+                    reverseGeocode(userLat, userLon);
+                },
+                (error) => {
+                    console.log("Geolokatsiya xatosi:", error.message);
+                    reverseGeocode(userLat, userLon);
+                    // Agar ruxsat berilmasa, foydalanuvchiga xabar berish
+                    if(error.code === 1) alert("Iltimos, geolokatsiyaga ruxsat bering!");
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
         }
-    };
+    }
 
-    document.getElementById('send_btn').onclick = function() {
-        let toAddr = document.getElementById('destination_select').value;
-        if(toAddr === "WRITE_OWN") {
-            toAddr = document.getElementById('custom_destination').value || "Kiritilmagan";
-        }
-        
-        tg.sendData(JSON.stringify({
-            lat: userLat, 
-            lon: userLon, 
-            from: addressName, 
-            to: toAddr
-        }));
-        setTimeout(() => tg.close(), 100);
+    // Sahifa yuklanganda va Telegram tayyor bo'lganda ishlatish
+    window.onload = findMe;
+    tg.ready();
+
+    document.getElementById('order_btn').onclick = function() {
+        let toAddr = document.getElementById('destination').value || "Kiritilmagan";
+        let orderData = { lat: userLat, lon: userLon, from: addressName, to: toAddr };
+        tg.sendData(JSON.stringify(orderData));
+        tg.close();
     };
 </script>
 </body>

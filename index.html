@@ -186,16 +186,34 @@
                     const data = await res.json();
                     const a = data.address;
                     let p = [];
-                    // Aniqroq manzil qismlari
-                    if(a.amenity || a.school || a.building || a.hospital) p.push(a.amenity || a.school || a.building || a.hospital);
-                    if(a.village || a.suburb || a.hamlet) p.push(a.village || a.suburb || a.hamlet);
-                    if(a.road) p.push(a.road);
+
+                    // 1. Ko'cha va Uy raqami
+                    if (a.road) {
+                        let street = a.road;
+                        if (a.house_number) street += " " + a.house_number + "-uy";
+                        p.push(street);
+                    }
+
+                    // 2. Bino yoki muassasa (maktab, bog'cha, shifoxona va h.k.)
+                    if (a.amenity || a.school || a.building || a.hospital || a.office) {
+                        p.push(a.amenity || a.school || a.building || a.hospital || a.office);
+                    }
+
+                    // 3. Qishloq, mahalla yoki kichik tuman
+                    if (a.village || a.suburb || a.hamlet || a.neighborhood) {
+                        p.push(a.village || a.suburb || a.hamlet || a.neighborhood);
+                    }
+
+                    // Agar yuqoridagilar bo'lmasa shahar/tuman nomi
+                    if (p.length === 0 && (a.city || a.town || a.county)) {
+                        p.push(a.city || a.town || a.county);
+                    }
                     
-                    addressName = p.length > 0 ? p.join(", ") : "GPS nuqtasi";
-                    document.getElementById('status').innerHTML = "✅ <b>Siz turgan joy:</b> " + addressName;
+                    addressName = p.length > 0 ? p.join(", ") : "Aniq manzil topilmadi";
+                    document.getElementById('status').innerHTML = "✅ <b>Siz turgan joy:</b><br>" + addressName;
                     document.getElementById('send_btn').disabled = false;
                 } catch (e) {
-                    addressName = "Noma'lum qishloq";
+                    addressName = "GPS koordinata orqali";
                     document.getElementById('status').innerText = "✅ Joylashuv aniqlandi";
                     document.getElementById('send_btn').disabled = false;
                 }

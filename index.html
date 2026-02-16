@@ -3,27 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taksi Buyurtma</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 380px; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid #248bcf; }
         h3 { text-align: center; color: #333; margin-bottom: 20px; }
-        input { width: 100%; padding: 14px; margin: 15px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; transition: 0.3s; }
-        input:focus { border-color: #248bcf; box-shadow: 0 0 5px rgba(36, 139, 207, 0.3); }
+        
+        select, input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; }
+        select:focus, input:focus { border-color: #248bcf; }
+        
+        #custom_destination { display: none; animation: fadeIn 0.3s; }
+        
         button { width: 100%; padding: 16px; background: #248bcf; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:disabled { background: #cbd5e0; cursor: not-allowed; }
-        #status { font-size: 14px; text-align: center; margin-bottom: 10px; color: #555; min-height: 20px; font-weight: 500; }
-        .loader { color: #248bcf; font-style: italic; }
+        
+        #status { font-size: 14px; text-align: center; margin-bottom: 10px; color: #555; font-weight: 500; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h3>🚖 Taksi Buyurtma</h3>
-    <div id="status" class="loader">📍 Lokatsiya aniqlanmoqda...</div>
+    <div id="status">📍 Lokatsiya aniqlanmoqda...</div>
     
-    <input type="text" id="to_address" placeholder="Qayerga borasiz? (majburiy emas)">
+    <label for="destination_select" style="font-size: 14px; color: #666;">Qayerga borasiz?</label>
+    <select id="destination_select" onchange="toggleCustomInput()">
+        <option value="Xonqiz">Xonqiz</option>
+        <option value="Chimyon">Chimyon</option>
+        <option value="Mindon">Mindon</option>
+        <option value="Konchilar">Konchilar</option>
+        <option value="Qo'rg'ontepa">Qo'rg'ontepa</option>
+        <option value="Langar">Langar</option>
+        <option value="Boshqa">Boshqa (o'zingiz yozing)</option>
+    </select>
+
+    <input type="text" id="custom_destination" placeholder="Manzilni kiriting...">
     
     <button id="send_btn" disabled>Buyurtma berish</button>
 </div>
@@ -38,49 +53,42 @@
     
     const statusDiv = document.getElementById('status');
     const sendBtn = document.getElementById('send_btn');
-    const toInput = document.getElementById('to_address');
+    const destSelect = document.getElementById('destination_select');
+    const customInput = document.getElementById('custom_destination');
 
-    // Sahifa yuklanishi bilan lokatsiyani olish va manzilni aniqlash
+    // "Boshqa" tanlanganda inputni ko'rsatish
+    function toggleCustomInput() {
+        if (destSelect.value === "Boshqa") {
+            customInput.style.display = "block";
+            customInput.focus();
+        } else {
+            customInput.style.display = "none";
+        }
+    }
+
     window.onload = function() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     userLat = position.coords.latitude;
                     userLon = position.coords.longitude;
-                    
-                    statusDiv.innerHTML = "<span class='loader'>🔍 Manzil aniqlanmoqda...</span>";
+                    statusDiv.innerText = "🔍 Manzil aniqlanmoqda...";
                     
                     try {
-                        // Nominatim orqali manzilni topish (o'zbek tilida)
                         const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&addressdetails=1`, {
                             headers: { 'Accept-Language': 'uz' }
                         });
                         const resData = await resp.json();
                         const addr = resData.address;
 
-                        // Manzil qismlarini yig'ish (Maktab, Qishloq, Ko'cha va h.k.)
                         let parts = [];
-                        
-                        // 1. Binolar yoki muassasalar (masalan: 22-maktab)
-                        if (addr.amenity || addr.building || addr.school || addr.office) {
-                            parts.push(addr.amenity || addr.building || addr.school || addr.office);
-                        }
-                        
-                        // 2. Mahalla, qishloq yoki kichik tuman (masalan: Oqbilol qishlog'i)
-                        if (addr.village || addr.suburb || addr.hamlet || addr.neighborhood) {
-                            parts.push(addr.village || addr.suburb || addr.hamlet || addr.neighborhood);
-                        }
+                        if (addr.amenity || addr.building || addr.school) parts.push(addr.amenity || addr.building || addr.school);
+                        if (addr.village || addr.suburb || addr.hamlet) parts.push(addr.village || addr.suburb || addr.hamlet);
+                        if (addr.road) parts.push(addr.road);
 
-                        // 3. Ko'cha nomi
-                        if (addr.road) {
-                            parts.push(addr.road);
-                        }
-
-                        // Barcha topilgan qismlarni bitta matnga birlashtiramiz
                         addressName = parts.length > 0 ? parts.join(", ") : "Aniq manzil topilmadi";
-                        
-                        statusDiv.innerText = "✅ Manzil: " + addressName;
-                        statusDiv.style.color = "#2d8a2d";
+                        statusDiv.innerText = "✅ Siz shu yerdamisiz: " + addressName;
+                        statusDiv.style.color = "green";
                         sendBtn.disabled = false;
                     } catch (e) {
                         addressName = "Koordinata bo'yicha aniqlandi";
@@ -90,32 +98,28 @@
                 },
                 (err) => {
                     statusDiv.innerText = "❌ GPS ruxsati berilmadi";
-                    statusDiv.style.color = "#e53e3e";
-                    alert("GPS ruxsati berilmasa buyurtma berib bo'lmaydi!");
+                    statusDiv.style.color = "red";
                 },
                 { enableHighAccuracy: true }
             );
-        } else {
-            statusDiv.innerText = "❌ Brauzer GPSni qo'llab-quvvatlamaydi";
         }
     };
 
-    // Botga ma'lumotni yuborish funksiyasi
     sendBtn.onclick = function() {
+        let finalDestination = destSelect.value;
+        if (finalDestination === "Boshqa") {
+            finalDestination = customInput.value || "Manzil ko'rsatilmadi";
+        }
+
         const data = {
             lat: userLat,
             lon: userLon,
             from: addressName,
-            to: toInput.value || "Kiritilmagan (majburiy emas)"
+            to: finalDestination
         };
 
-        // Telegramga yuborish
         tg.sendData(JSON.stringify(data));
-        
-        // Ilovani yopish
-        setTimeout(() => {
-            tg.close();
-        }, 150);
+        setTimeout(() => { tg.close(); }, 150);
     };
 </script>
 

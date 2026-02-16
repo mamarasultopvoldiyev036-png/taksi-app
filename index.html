@@ -5,20 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 400px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h3 { text-align: center; color: #333; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; background: #248bcf; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:disabled { background: #ccc; }
-        #status { font-size: 14px; text-align: center; margin-bottom: 10px; color: #666; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 380px; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid #248bcf; }
+        h3 { text-align: center; color: #333; margin-bottom: 20px; }
+        input { width: 100%; padding: 14px; margin: 15px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #248bcf; box-shadow: 0 0 5px rgba(36, 139, 207, 0.3); }
+        button { width: 100%; padding: 16px; background: #248bcf; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:disabled { background: #cbd5e0; cursor: not-allowed; }
+        button:active { transform: scale(0.98); }
+        #status { font-size: 14px; text-align: center; margin-bottom: 5px; color: #555; min-height: 20px; font-weight: 500; }
+        .loader { color: #248bcf; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h3>Taksi Buyurtma</h3>
-    <div id="status">📍 Lokatsiya aniqlanmoqda...</div>
+    <h3>🚖 Taksi Buyurtma</h3>
+    <div id="status" class="loader">📍 Lokatsiya aniqlanmoqda...</div>
     
     <input type="text" id="to_address" placeholder="Qayerga borasiz? (majburiy emas)">
     
@@ -31,12 +34,13 @@
 
     let userLat = null;
     let userLon = null;
-    let addressName = "Aniqlanmadi";
+    let addressName = "Noma'lum manzil";
     
     const statusDiv = document.getElementById('status');
     const sendBtn = document.getElementById('send_btn');
     const toInput = document.getElementById('to_address');
 
+    // Sahifa yuklanishi bilan lokatsiyani olish
     window.onload = function() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -44,29 +48,37 @@
                     userLat = position.coords.latitude;
                     userLon = position.coords.longitude;
                     
-                    statusDiv.innerText = "🔍 Manzil aniqlanmoqda...";
+                    statusDiv.innerHTML = "<span class='loader'>🔍 Manzil nomi aniqlanmoqda...</span>";
                     
                     try {
-                        // Koordinatani manzil nomiga aylantirish (Reverse Geocoding)
-                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&addressdetails=1`);
-                        const data = await response.json();
-                        addressName = data.display_name;
+                        // Nominatim orqali manzilni topish
+                        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&addressdetails=1`, {
+                            headers: { 'Accept-Language': 'uz' }
+                        });
+                        const resData = await resp.json();
                         
-                        statusDiv.innerText = "✅ Manzil: " + (data.address.road || data.address.suburb || "Aniqlandi");
-                        statusDiv.style.color = "green";
+                        // Ko'cha va tuman nomini olish
+                        const addr = resData.address;
+                        addressName = addr.road || addr.suburb || addr.city || addr.neighborhood || "Aniq manzil topilmadi";
+                        
+                        statusDiv.innerText = "✅ Manzil: " + addressName;
+                        statusDiv.style.color = "#2d8a2d";
                         sendBtn.disabled = false;
-                    } catch (error) {
-                        addressName = "Koordinata bo'yicha (nomi noma'lum)";
+                    } catch (e) {
+                        addressName = "GPS koordinata orqali";
                         statusDiv.innerText = "✅ Lokatsiya aniqlandi";
                         sendBtn.disabled = false;
                     }
                 },
-                (error) => {
-                    statusDiv.innerText = "❌ Lokatsiyani yoqing!";
-                    statusDiv.style.color = "red";
-                    alert("GPS ruxsati berilmasa buyurtma berib bo'lmaydi.");
-                }
+                (err) => {
+                    statusDiv.innerText = "❌ GPS o'chiq yoki ruxsat berilmadi";
+                    statusDiv.style.color = "#e53e3e";
+                    alert("Iltimos, telefoningizda GPSni yoqing va brauzerga ruxsat bering!");
+                },
+                { enableHighAccuracy: true }
             );
+        } else {
+            statusDiv.innerText = "❌ Brauzer lokatsiyani qo'llab-quvvatlamaydi";
         }
     };
 
@@ -74,12 +86,12 @@
         const data = {
             lat: userLat,
             lon: userLon,
-            from: addressName, // Endi bu yerda Google/OSM dan olingan manzil nomi bo'ladi
+            from: addressName,
             to: toInput.value || "Kiritilmagan (majburiy emas)"
         };
 
         tg.sendData(JSON.stringify(data));
-        setTimeout(() => { tg.close(); }, 100);
+        setTimeout(() => { tg.close(); }, 150);
     };
 </script>
 

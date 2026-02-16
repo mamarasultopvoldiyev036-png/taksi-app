@@ -187,33 +187,33 @@
                     const a = data.address;
                     let p = [];
 
-                    // 1. Ko'cha va Uy raqami
+                    // 1. Ko'cha nomi va uy raqami (Eng muhim ma'lumot)
                     if (a.road) {
-                        let street = a.road;
-                        if (a.house_number) street += " " + a.house_number + "-uy";
-                        p.push(street);
+                        let streetInfo = a.road;
+                        if (a.house_number) streetInfo += ", " + a.house_number + "-uy";
+                        p.push(streetInfo);
                     }
 
-                    // 2. Bino yoki muassasa (maktab, bog'cha, shifoxona va h.k.)
-                    if (a.amenity || a.school || a.building || a.hospital || a.office) {
-                        p.push(a.amenity || a.school || a.building || a.hospital || a.office);
+                    // 2. Bino yoki muassasa (Maktab, bog'cha, magazin nomi va h.k.)
+                    if (a.amenity || a.school || a.building || a.shop || a.hospital) {
+                        p.push(a.amenity || a.school || a.building || a.shop || a.hospital);
                     }
 
-                    // 3. Qishloq, mahalla yoki kichik tuman
+                    // 3. Hudud nomi (Qishloq, mahalla, kichik tuman)
                     if (a.village || a.suburb || a.hamlet || a.neighborhood) {
                         p.push(a.village || a.suburb || a.hamlet || a.neighborhood);
                     }
 
-                    // Agar yuqoridagilar bo'lmasa shahar/tuman nomi
-                    if (p.length === 0 && (a.city || a.town || a.county)) {
-                        p.push(a.city || a.town || a.county);
+                    // Agar yuqoridagilar bo'lmasa, shahar yoki tuman nomi
+                    if (p.length === 0) {
+                        p.push(a.city || a.town || a.county || "Noma'lum hudud");
                     }
-                    
-                    addressName = p.length > 0 ? p.join(", ") : "Aniq manzil topilmadi";
+
+                    addressName = p.join(", ");
                     document.getElementById('status').innerHTML = "✅ <b>Siz turgan joy:</b><br>" + addressName;
                     document.getElementById('send_btn').disabled = false;
                 } catch (e) {
-                    addressName = "GPS koordinata orqali";
+                    addressName = "Koordinata: " + userLat.toFixed(4) + ", " + userLon.toFixed(4);
                     document.getElementById('status').innerText = "✅ Joylashuv aniqlandi";
                     document.getElementById('send_btn').disabled = false;
                 }

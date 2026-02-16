@@ -3,118 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Taksi Buyurtma</title>
-    
+    <title>Tezkor Taksi</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-        #map { height: 300px; width: 100%; }
-        .container { padding: 15px; }
-        .info-box { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h3 { margin-top: 0; color: #333; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        #send_btn { 
-            width: 100%; padding: 15px; background: #0088cc; color: white; 
-            border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;
+        :root {
+            --accent: #f1c40f; /* Oltin rang */
+            --bg: #121212;
+            --card: #1e1e1e;
+            --input: #2a2a2a;
+            --text: #ffffff;
         }
-        #send_btn:active { background: #006699; }
-        .address-text { font-size: 14px; color: #666; margin-bottom: 10px; }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; padding: 0; 
+            background-color: var(--bg); 
+            color: var(--text);
+            display: flex; justify-content: center;
+        }
+
+        .app-container {
+            width: 100%; max-width: 450px;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+        }
+
+        header {
+            padding: 15px; text-align: center;
+            background: var(--card);
+            border-bottom: 2px solid var(--accent);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        header h1 {
+            margin: 0; font-size: 24px; color: var(--accent);
+            text-transform: uppercase; letter-spacing: 2px;
+            font-weight: 900;
+        }
+
+        #map {
+            height: 250px; width: calc(100% - 30px);
+            margin: 15px; border-radius: 15px;
+            border: 1px solid #333;
+            z-index: 1;
+        }
+
+        .content { padding: 0 15px; }
+
+        .status-card {
+            background: var(--card);
+            padding: 12px; border-radius: 12px;
+            margin-bottom: 20px; font-size: 13px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .input-group { 
+            background: var(--card);
+            padding: 20px; border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block; margin-bottom: 10px;
+            font-size: 15px; font-weight: 600;
+        }
+
+        input {
+            width: 100%; padding: 14px;
+            background: var(--input); border: 1px solid #444;
+            border-radius: 12px; color: white;
+            font-size: 16px; outline: none; transition: 0.3s;
+            box-sizing: border-box;
+        }
+
+        input:focus { border-color: var(--accent); }
+
+        .footer {
+            margin-top: auto; padding: 20px;
+            background: var(--bg);
+        }
+
+        .btn-order {
+            width: 100%; padding: 18px;
+            background: var(--accent); color: #000;
+            border: none; border-radius: 15px;
+            font-size: 18px; font-weight: 800;
+            text-transform: uppercase; cursor: pointer;
+            box-shadow: 0 6px 20px rgba(241, 196, 15, 0.3);
+            transition: 0.2s;
+        }
+
+        .btn-order:active { transform: scale(0.97); }
     </style>
 </head>
 <body>
 
-<div id="map"></div>
+<div class="app-container">
+    <header>
+        <h1>⚡️ Tezkor Taksi</h1>
+    </header>
 
-<div class="container">
-    <div class="info-box">
-        <h3>📍 Buyurtma tafsilotlari</h3>
-        
-        <div class="input-group">
-            <label>Siz turgan joy (Xaritadan tanlang):</label>
-            <div id="address_display" class="address-text">Lokatsiya aniqlanmoqda...</div>
+    <div id="map"></div>
+
+    <div class="content">
+        <div class="status-card">
+            📍 <span id="status">Lokatsiya aniqlanmoqda...</span>
         </div>
 
         <div class="input-group">
-            <label>Qayerga borasiz?</label>
-            <input type="text" id="destination" placeholder="Manzilni kiriting (masalan: Markaziy bozor)">
+            <label>🏁 Qayerga borasiz?</label>
+            <input type="text" id="destination" placeholder="Manzilni yozing (masalan: Markaziy bozor)">
         </div>
 
-        <button id="send_btn">🚖 Buyurtma berish</button>
+        <button class="btn-order" id="order_btn">🚖 Buyurtma berish</button>
     </div>
+    <br>
 </div>
 
 <script>
     let tg = window.Telegram.WebApp;
-    tg.expand(); // Web Appni to'liq ekranga yoyish
+    tg.expand();
 
-    let userLat = 41.311081; // Standart (Toshkent)
+    let userLat = 41.311081;
     let userLon = 69.240562;
-    let addressName = "";
+    let addressName = "Aniqlanmagan manzil";
 
-    // Xaritani initsializatsiya qilish
-    let map = L.map('map').setView([userLat, userLon], 13);
+    // Xaritani yaratish
+    var map = L.map('map').setView([userLat, userLon], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // Marker qo'shish (suriladigan)
-    let marker = L.marker([userLat, userLon], {draggable: true}).addTo(map);
+    // Marker (suriladigan)
+    var marker = L.marker([userLat, userLon], {draggable: true}).addTo(map);
 
-    // Manzilni aniqlash funksiyasi (Reverse Geocoding)
-    async function getAddress(lat, lon) {
+    // Manzilni matnga aylantirish (OpenStreetMap Nominatim)
+    async function reverseGeocode(lat, lon) {
+        document.getElementById('status').innerText = "Manzil aniqlanmoqda...";
         try {
-            let response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-            let data = await response.json();
+            let res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            let data = await res.json();
             addressName = data.display_name;
-            document.getElementById('address_display').innerText = addressName;
-        } catch (error) {
-            console.error("Xatolik:", error);
-            document.getElementById('address_display').innerText = "Manzilni aniqlab bo'lmadi";
+            document.getElementById('status').innerText = addressName;
+        } catch (e) {
+            addressName = "Manzilni aniqlab bo'lmadi";
+            document.getElementById('status').innerText = addressName;
         }
     }
 
-    // Marker surilganda koordinatalarni yangilash
-    marker.on('dragend', function(e) {
-        let pos = marker.getLatLng();
-        userLat = pos.lat;
-        userLon = pos.lng;
-        getAddress(userLat, userLon);
+    // Marker surilganda ishlaydi
+    marker.on('dragend', function() {
+        let position = marker.getLatLng();
+        userLat = position.lat;
+        userLon = position.lng;
+        reverseGeocode(userLat, userLon);
     });
 
-    // Qurilma geolokatsiyasini olish
-    tg.Ready;
+    // Foydalanuvchi joriy lokatsiyasini olish
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(position => {
             userLat = position.coords.latitude;
             userLon = position.coords.longitude;
             map.setView([userLat, userLon], 16);
             marker.setLatLng([userLat, userLon]);
-            getAddress(userLat, userLon);
+            reverseGeocode(userLat, userLon);
         });
     }
 
-    // Botga ma'lumot yuborish
-    document.getElementById('send_btn').onclick = function() {
-        let destination = document.getElementById('destination').value;
+    // Buyurtma berish tugmasi
+    document.getElementById('order_btn').onclick = function() {
+        let toAddr = document.getElementById('destination').value;
         
-        if (!destination) {
-            alert("Iltimos, boradigan manzilingizni yozing!");
+        if (!toAddr) {
+            alert("Iltimos, borish manzilingizni kiriting!");
             return;
         }
 
-        let data = {
+        let orderData = {
             lat: userLat,
             lon: userLon,
             from: addressName,
-            to: destination
+            to: toAddr
         };
 
-        // MUHIM: tg.sendData faqat ReplyKeyboardMarkup orqali ochilganda ishlaydi
-        tg.sendData(JSON.stringify(data));
+        // Ma'lumotni Botga yuborish
+        tg.sendData(JSON.stringify(orderData));
         tg.close();
     };
 </script>

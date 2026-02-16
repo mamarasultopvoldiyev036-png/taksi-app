@@ -11,19 +11,21 @@
         body { font-family: 'Segoe UI', sans-serif; padding: 15px; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; margin: 0; }
         .container { width: 100%; max-width: 400px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); box-sizing: border-box; }
         
-        /* Xarita uslubi */
         #map { height: 180px; width: 100%; border-radius: 12px; margin-bottom: 15px; border: 1px solid #ddd; }
         
         h3 { text-align: center; color: #333; margin: 0 0 15px 0; font-size: 20px; }
         select, input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 15px; outline: none; }
         
-        #custom_destination { display: none; border-color: #248bcf; }
+        /* Boshqa tanlanganda ko'rinadigan input (dastlab ochiq) */
+        #custom_destination { display: block; border-color: #248bcf; }
         
         button { width: 100%; padding: 15px; background: #248bcf; color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:disabled { background: #cbd5e0; }
         
         #status { font-size: 13px; text-align: center; margin-bottom: 10px; color: #555; font-weight: 500; line-height: 1.4; }
-        label { font-size: 13px; color: #888; margin-left: 5px; }
+        
+        .label-text { font-size: 14px; color: #333; font-weight: 600; margin-left: 5px; }
+        .required-text { color: red; font-size: 12px; font-weight: normal; margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -35,15 +37,19 @@
     
     <div id="status">📍 Lokatsiya aniqlanmoqda...</div>
     
-    <label>Qayerga borasiz?</label>
+    <label>
+        <span class="label-text">Qayerga borasiz?</span>
+        <span class="required-text">(majburiy emas)</span>
+    </label>
+    
     <select id="destination_select" onchange="toggleCustomInput()">
+        <option value="Boshqa">Boshqa (o'zingiz yozing)</option>
         <option value="Xonqiz">Xonqiz</option>
         <option value="Chimyon">Chimyon</option>
         <option value="Mindon">Mindon</option>
         <option value="Konchilar">Konchilar</option>
         <option value="Qo'rg'ontepa">Qo'rg'ontepa</option>
         <option value="Langar">Langar</option>
-        <option value="Boshqa">Boshqa (o'zingiz yozing)</option>
     </select>
 
     <input type="text" id="custom_destination" placeholder="Manzilni kiriting...">
@@ -66,11 +72,14 @@
     const customInput = document.getElementById('custom_destination');
 
     function toggleCustomInput() {
-        customInput.style.display = (destSelect.value === "Boshqa") ? "block" : "none";
-        if (destSelect.value === "Boshqa") customInput.focus();
+        if (destSelect.value === "Boshqa") {
+            customInput.style.display = "block";
+            customInput.focus();
+        } else {
+            customInput.style.display = "none";
+        }
     }
 
-    // Xaritani initsializatsiya qilish (vaqtinchalik markaz - O'zbekiston)
     function initMap(lat, lon) {
         if (!map) {
             map = L.map('map').setView([lat, lon], 16);
@@ -89,10 +98,9 @@
                     userLat = position.coords.latitude;
                     userLon = position.coords.longitude;
                     
-                    // Xaritani yangilash
                     initMap(userLat, userLon);
                     
-                    statusDiv.innerText = "🔍 Manzil nomi aniqlanmoqda...";
+                    statusDiv.innerText = "🔍 Manzil aniqlanmoqda...";
                     
                     try {
                         const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&addressdetails=1`, {
@@ -117,7 +125,7 @@
                     }
                 },
                 (err) => {
-                    statusDiv.innerText = "❌ GPS o'chiq! Iltimos, joylashuvni aniqlashga ruxsat bering.";
+                    statusDiv.innerText = "❌ GPS o'chiq yoki ruxsat berilmadi.";
                     statusDiv.style.color = "red";
                 },
                 { enableHighAccuracy: true }
@@ -128,7 +136,7 @@
     sendBtn.onclick = function() {
         let finalDestination = destSelect.value;
         if (finalDestination === "Boshqa") {
-            finalDestination = customInput.value || "Manzil ko'rsatilmadi";
+            finalDestination = customInput.value || "Kiritilmagan (majburiy emas)";
         }
 
         const data = {

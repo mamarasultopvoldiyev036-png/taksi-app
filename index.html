@@ -1,47 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="uz">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        input, button { padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-        button { background: #0088cc; color: white; border: none; cursor: pointer; }
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 400px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h3 { text-align: center; color: #333; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 15px; background: #248bcf; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:disabled { background: #ccc; }
+        #status { font-size: 14px; text-align: center; margin-bottom: 10px; color: #666; }
     </style>
 </head>
 <body>
-    <h3>Taksi Buyurtma Berish</h3>
+
+<div class="container">
+    <h3>Taksi Buyurtma</h3>
+    <div id="status">📍 Lokatsiya aniqlanmoqda...</div>
     
-    <input type="text" id="to" placeholder="Qayerga borasiz?">
-    <button onclick="sendOrder()">Buyurtma berish</button>
+    <input type="text" id="to_address" placeholder="Qayerga borasiz? (majburiy emas)">
+    
+    <button id="send_btn" disabled>Buyurtma berish</button>
+</div>
 
-    <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
+<script>
+    let tg = window.Telegram.WebApp;
+    tg.expand();
 
-        function sendOrder() {
-            const to_addr = document.getElementById('to').value;
-            
-            if (!to_addr) {
-                alert("Iltimos, boradigan manzilingizni yozing!");
-                return;
-            }
+    let userLat = null;
+    let userLon = null;
+    const statusDiv = document.getElementById('status');
+    const sendBtn = document.getElementById('send_btn');
+    const toInput = document.getElementById('to_address');
 
-            // Foydalanuvchi lokatsiyasini avtomatik olish
-            navigator.geolocation.getCurrentPosition(function(position) {
-                const data = {
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude,
-                    from: "GPS orqali aniqlandi", // "Qayerdan" so'ralmaydi
-                    to: to_addr
-                };
-                
-                // Botga ma'lumotni yuborish
-                tg.sendData(JSON.stringify(data));
-                tg.close();
-            }, function(error) {
-                alert("Lokatsiyani aniqlashga ruxsat bering!");
-            });
+    // 1. Lokatsiyani birinchi bo'lib aniqlash
+    window.onload = function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLat = position.coords.latitude;
+                    userLon = position.coords.longitude;
+                    statusDiv.innerText = "✅ Lokatsiya aniqlandi";
+                    statusDiv.style.color = "green";
+                    sendBtn.disabled = false; // Lokatsiya aniqlangach tugmani yoqamiz
+                },
+                (error) => {
+                    statusDiv.innerText = "❌ Lokatsiyani yoqing!";
+                    statusDiv.style.color = "red";
+                    alert("Iltimos, telefoningizda GPSni yoqing va ruxsat bering!");
+                }
+            );
+        } else {
+            statusDiv.innerText = "Brauzeringiz lokatsiyani qo'llab-quvvatlamaydi";
         }
-    </script>
+    };
+
+    // 2. Ma'lumotni botga yuborish
+    sendBtn.onclick = function() {
+        const data = {
+            lat: userLat,
+            lon: userLon,
+            from: "GPS orqali",
+            to: toInput.value || "Kiritilmagan (majburiy emas)"
+        };
+
+        // Telegramga JSON formatda uzatish
+        tg.sendData(JSON.stringify(data));
+        
+        // Web appni yopish
+        setTimeout(() => {
+            tg.close();
+        }, 100);
+    };
+</script>
+
 </body>
 </html>

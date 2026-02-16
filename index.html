@@ -11,7 +11,7 @@
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 15px; background: #248bcf; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:disabled { background: #ccc; }
-        #status { font-size: 14px; text-align: center; margin-bottom: 10px; color: #666; }
+        #status { font-size: 14px; text-align: center; margin-bottom: 10px; color: #666; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -31,48 +31,55 @@
 
     let userLat = null;
     let userLon = null;
+    let addressName = "Aniqlanmadi";
+    
     const statusDiv = document.getElementById('status');
     const sendBtn = document.getElementById('send_btn');
     const toInput = document.getElementById('to_address');
 
-    // 1. Lokatsiyani birinchi bo'lib aniqlash
     window.onload = function() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
+                async (position) => {
                     userLat = position.coords.latitude;
                     userLon = position.coords.longitude;
-                    statusDiv.innerText = "✅ Lokatsiya aniqlandi";
-                    statusDiv.style.color = "green";
-                    sendBtn.disabled = false; // Lokatsiya aniqlangach tugmani yoqamiz
+                    
+                    statusDiv.innerText = "🔍 Manzil aniqlanmoqda...";
+                    
+                    try {
+                        // Koordinatani manzil nomiga aylantirish (Reverse Geocoding)
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&addressdetails=1`);
+                        const data = await response.json();
+                        addressName = data.display_name;
+                        
+                        statusDiv.innerText = "✅ Manzil: " + (data.address.road || data.address.suburb || "Aniqlandi");
+                        statusDiv.style.color = "green";
+                        sendBtn.disabled = false;
+                    } catch (error) {
+                        addressName = "Koordinata bo'yicha (nomi noma'lum)";
+                        statusDiv.innerText = "✅ Lokatsiya aniqlandi";
+                        sendBtn.disabled = false;
+                    }
                 },
                 (error) => {
                     statusDiv.innerText = "❌ Lokatsiyani yoqing!";
                     statusDiv.style.color = "red";
-                    alert("Iltimos, telefoningizda GPSni yoqing va ruxsat bering!");
+                    alert("GPS ruxsati berilmasa buyurtma berib bo'lmaydi.");
                 }
             );
-        } else {
-            statusDiv.innerText = "Brauzeringiz lokatsiyani qo'llab-quvvatlamaydi";
         }
     };
 
-    // 2. Ma'lumotni botga yuborish
     sendBtn.onclick = function() {
         const data = {
             lat: userLat,
             lon: userLon,
-            from: "GPS orqali",
+            from: addressName, // Endi bu yerda Google/OSM dan olingan manzil nomi bo'ladi
             to: toInput.value || "Kiritilmagan (majburiy emas)"
         };
 
-        // Telegramga JSON formatda uzatish
         tg.sendData(JSON.stringify(data));
-        
-        // Web appni yopish
-        setTimeout(() => {
-            tg.close();
-        }, 100);
+        setTimeout(() => { tg.close(); }, 100);
     };
 </script>
 

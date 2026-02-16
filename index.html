@@ -4,30 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 380px; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid #248bcf; }
-        h3 { text-align: center; color: #333; margin-bottom: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 15px; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; margin: 0; }
+        .container { width: 100%; max-width: 400px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); box-sizing: border-box; }
         
-        select, input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; }
-        select:focus, input:focus { border-color: #248bcf; }
+        /* Xarita uslubi */
+        #map { height: 180px; width: 100%; border-radius: 12px; margin-bottom: 15px; border: 1px solid #ddd; }
         
-        #custom_destination { display: none; animation: fadeIn 0.3s; }
+        h3 { text-align: center; color: #333; margin: 0 0 15px 0; font-size: 20px; }
+        select, input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 15px; outline: none; }
         
-        button { width: 100%; padding: 16px; background: #248bcf; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        button:disabled { background: #cbd5e0; cursor: not-allowed; }
+        #custom_destination { display: none; border-color: #248bcf; }
         
-        #status { font-size: 14px; text-align: center; margin-bottom: 10px; color: #555; font-weight: 500; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        button { width: 100%; padding: 15px; background: #248bcf; color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:disabled { background: #cbd5e0; }
+        
+        #status { font-size: 13px; text-align: center; margin-bottom: 10px; color: #555; font-weight: 500; line-height: 1.4; }
+        label { font-size: 13px; color: #888; margin-left: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h3>🚖 Taksi Buyurtma</h3>
+    
+    <div id="map"></div>
+    
     <div id="status">📍 Lokatsiya aniqlanmoqda...</div>
     
-    <label for="destination_select" style="font-size: 14px; color: #666;">Qayerga borasiz?</label>
+    <label>Qayerga borasiz?</label>
     <select id="destination_select" onchange="toggleCustomInput()">
         <option value="Xonqiz">Xonqiz</option>
         <option value="Chimyon">Chimyon</option>
@@ -50,19 +58,27 @@
     let userLat = null;
     let userLon = null;
     let addressName = "Noma'lum manzil";
-    
+    let map, marker;
+
     const statusDiv = document.getElementById('status');
     const sendBtn = document.getElementById('send_btn');
     const destSelect = document.getElementById('destination_select');
     const customInput = document.getElementById('custom_destination');
 
-    // "Boshqa" tanlanganda inputni ko'rsatish
     function toggleCustomInput() {
-        if (destSelect.value === "Boshqa") {
-            customInput.style.display = "block";
-            customInput.focus();
+        customInput.style.display = (destSelect.value === "Boshqa") ? "block" : "none";
+        if (destSelect.value === "Boshqa") customInput.focus();
+    }
+
+    // Xaritani initsializatsiya qilish (vaqtinchalik markaz - O'zbekiston)
+    function initMap(lat, lon) {
+        if (!map) {
+            map = L.map('map').setView([lat, lon], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            marker = L.marker([lat, lon]).addTo(map);
         } else {
-            customInput.style.display = "none";
+            map.setView([lat, lon], 16);
+            marker.setLatLng([lat, lon]);
         }
     }
 
@@ -72,7 +88,11 @@
                 async (position) => {
                     userLat = position.coords.latitude;
                     userLon = position.coords.longitude;
-                    statusDiv.innerText = "🔍 Manzil aniqlanmoqda...";
+                    
+                    // Xaritani yangilash
+                    initMap(userLat, userLon);
+                    
+                    statusDiv.innerText = "🔍 Manzil nomi aniqlanmoqda...";
                     
                     try {
                         const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&addressdetails=1`, {
@@ -87,17 +107,17 @@
                         if (addr.road) parts.push(addr.road);
 
                         addressName = parts.length > 0 ? parts.join(", ") : "Aniq manzil topilmadi";
-                        statusDiv.innerText = "✅ Siz shu yerdamisiz: " + addressName;
+                        statusDiv.innerHTML = "✅ <b>Turgan joyingiz:</b><br>" + addressName;
                         statusDiv.style.color = "green";
                         sendBtn.disabled = false;
                     } catch (e) {
-                        addressName = "Koordinata bo'yicha aniqlandi";
+                        addressName = "GPS orqali aniqlandi";
                         statusDiv.innerText = "✅ Lokatsiya aniqlandi";
                         sendBtn.disabled = false;
                     }
                 },
                 (err) => {
-                    statusDiv.innerText = "❌ GPS ruxsati berilmadi";
+                    statusDiv.innerText = "❌ GPS o'chiq! Iltimos, joylashuvni aniqlashga ruxsat bering.";
                     statusDiv.style.color = "red";
                 },
                 { enableHighAccuracy: true }

@@ -2,93 +2,47 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tezkor Taksi | MapTiler Pro</title>
-    
-    <!-- Telegram Web App -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tezkor Taksi</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- MapTiler SDK -->
-    <script src="https://cdn.maptiler.com/maptiler-sdk-js/v2.3.0/maptiler-sdk.umd.min.js"></script>
-    <link href="https://cdn.maptiler.com/maptiler-sdk-js/v2.3.0/maptiler-sdk.css" rel="stylesheet" />
-    
-    <!-- MapTiler Geocoding -->
-    <script src="https://cdn.maptiler.com/maptiler-geocoding/v1.2.0/maptiler-geocoding.umd.min.js"></script>
-    
+    <!-- OpenStreetMap Light (tez va sodda) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-
-        :root {
-            --primary: #0066cc;
-            --primary-dark: #0052a3;
-            --accent: #ff9900;
-            --success: #00cc66;
-            --danger: #ff4444;
-            --bg: #0a0f1a;
-            --card: #1a1f2e;
-            --text: #ffffff;
-            --text-secondary: #a0a5b8;
+            font-family: system-ui, -apple-system, sans-serif;
         }
 
         body {
-            background: var(--bg);
-            color: var(--text);
+            background: #f8fafc;
+            color: #1e293b;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
-        /* Header */
         .header {
             padding: 20px;
-            background: linear-gradient(135deg, var(--primary), #003366);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -20%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
+            background: #0066cc;
+            color: white;
         }
 
         .header h1 {
             font-size: 24px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            position: relative;
-            z-index: 1;
+            font-weight: 600;
         }
 
-        .header-badge {
-            background: rgba(255,255,255,0.2);
-            padding: 4px 12px;
-            border-radius: 30px;
-            font-size: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            margin-top: 8px;
-        }
-
-        /* Map Container */
+        /* Xarita - endi majburiy emas, yashirish mumkin */
         .map-container {
-            position: relative;
-            height: 300px;
-            width: 100%;
+            height: 200px;
+            margin: 15px;
+            border-radius: 15px;
             overflow: hidden;
+            border: 2px solid #e2e8f0;
+            display: none; /* Yashirin - xohlasangiz ko'rsating */
         }
 
         #map {
@@ -96,716 +50,272 @@
             width: 100%;
         }
 
-        .map-overlay {
-            position: absolute;
-            bottom: 15px;
-            left: 15px;
-            right: 15px;
-            background: rgba(26, 31, 46, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
+        .content {
             padding: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 10;
-        }
-
-        .location-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .location-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .location-text {
             flex: 1;
         }
 
-        .location-label {
-            font-size: 12px;
-            color: var(--text-secondary);
+        /* Joylashuv kartasi */
+        .location-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .location-header {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #0066cc;
+            font-weight: 600;
         }
 
         .location-address {
-            font-weight: 600;
-            margin-top: 2px;
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            padding: 12px;
+            background: #f1f5f9;
+            border-radius: 12px;
         }
 
-        .gps-signal {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            transition: all 0.3s;
-        }
-
-        .gps-signal.active {
-            background: var(--success);
-            box-shadow: 0 0 0 3px rgba(0,204,102,0.3);
-            animation: pulse 2s infinite;
-        }
-
-        .gps-signal.inactive {
-            background: var(--danger);
-            box-shadow: 0 0 0 3px rgba(255,68,68,0.3);
-        }
-
-        .gps-signal.searching {
-            background: var(--accent);
-            box-shadow: 0 0 0 3px rgba(255,153,0,0.3);
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255,153,0,0.5); }
-            70% { box-shadow: 0 0 0 10px rgba(255,153,0,0); }
-            100% { box-shadow: 0 0 0 0 rgba(255,153,0,0); }
-        }
-
-        /* GPS Status Card */
-        .gps-status-card {
-            background: var(--card);
-            border-radius: 15px;
-            padding: 15px;
-            margin: 10px 15px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .gps-status-icon {
-            font-size: 24px;
-        }
-
-        .gps-status-text {
-            flex: 1;
-        }
-
-        .gps-status-title {
-            font-weight: 600;
-            margin-bottom: 3px;
-        }
-
-        .gps-status-desc {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .retry-btn {
-            background: var(--primary);
-            border: none;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        /* Content */
-        .content {
-            flex: 1;
-            padding: 20px;
-        }
-
-        /* Search Section */
-        .search-section {
-            background: var(--card);
-            border-radius: 25px;
-            padding: 18px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .search-title {
+        .gps-status {
             display: flex;
             align-items: center;
             gap: 8px;
-            color: var(--accent);
             font-size: 14px;
-            margin-bottom: 12px;
+            color: #64748b;
+        }
+
+        .gps-status.active {
+            color: #10b981;
+        }
+
+        .gps-status.inactive {
+            color: #ef4444;
+        }
+
+        /* Manzil qidirish */
+        .search-section {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e2e8f0;
         }
 
         .search-input {
-            position: relative;
-        }
-
-        .search-input input {
             width: 100%;
-            padding: 16px 20px;
-            background: rgba(0,0,0,0.3);
-            border: 2px solid rgba(255,255,255,0.05);
-            border-radius: 20px;
-            color: var(--text);
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-
-        .search-input input:focus {
-            border-color: var(--primary);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(0,102,204,0.2);
-        }
-
-        .search-input .clear-btn {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 18px;
-            display: none;
-        }
-
-        .search-input input:not(:placeholder-shown) + .clear-btn {
-            display: block;
-        }
-
-        /* Suggestions */
-        .suggestions {
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-
-        .suggestions.show {
-            display: block;
-        }
-
-        .suggestion-item {
             padding: 15px;
-            background: rgba(0,0,0,0.2);
+            border: 2px solid #e2e8f0;
             border-radius: 15px;
-            margin-bottom: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .search-input:focus {
+            border-color: #0066cc;
+            outline: none;
+        }
+
+        /* Tezkor tanlash tugmalari */
+        .quick-buttons {
             display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .suggestion-item:hover {
-            background: var(--primary);
-        }
-
-        .suggestion-icon {
-            font-size: 20px;
-        }
-
-        .suggestion-text {
-            flex: 1;
-        }
-
-        .suggestion-title {
-            font-weight: 600;
-            margin-bottom: 3px;
-        }
-
-        .suggestion-subtitle {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        /* Quick Places */
-        .quick-places {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
+            gap: 8px;
             flex-wrap: wrap;
+            margin: 15px 0;
         }
 
-        .quick-place {
+        .quick-btn {
             flex: 1;
             min-width: 70px;
-            padding: 12px 5px;
-            background: rgba(0,102,204,0.1);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 20px;
+            padding: 10px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 30px;
             text-align: center;
+            font-size: 13px;
             cursor: pointer;
-            transition: all 0.3s;
         }
 
-        .quick-place:hover {
-            background: var(--primary);
-            transform: translateY(-2px);
+        .quick-btn.active {
+            background: #0066cc;
+            color: white;
         }
 
-        .quick-place.active {
-            background: var(--accent);
-            color: #000;
-            font-weight: 600;
-        }
-
-        .quick-place i {
-            font-size: 20px;
-            display: block;
-            margin-bottom: 3px;
-        }
-
-        /* Price Card */
+        /* Narx kartasi */
         .price-card {
-            background: linear-gradient(135deg, #2a2f42, #1a1f30);
-            border-radius: 25px;
-            padding: 22px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
             margin: 20px 0;
-            border: 1px solid var(--accent);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .price-card::before {
-            content: '';
-            position: absolute;
-            top: -30%;
-            right: -10%;
-            width: 150px;
-            height: 150px;
-            background: rgba(255,153,0,0.1);
-            border-radius: 50%;
-        }
-
-        .distance-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .distance-value {
-            font-size: 36px;
-            font-weight: 800;
-            color: var(--accent);
-        }
-
-        .distance-unit {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        .price-breakdown {
-            margin: 15px 0;
+            border: 1px solid #e2e8f0;
         }
 
         .price-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px dashed rgba(255,255,255,0.1);
+            padding: 12px 0;
+            border-bottom: 1px dashed #e2e8f0;
         }
 
         .price-row.total {
             border-bottom: none;
-            border-top: 2px solid var(--accent);
+            border-top: 2px solid #0066cc;
             margin-top: 10px;
             padding-top: 15px;
             font-size: 20px;
             font-weight: 700;
-            color: var(--accent);
+            color: #0066cc;
         }
 
-        .price-value {
-            font-weight: 600;
-        }
-
-        /* Time Estimate */
-        .time-info {
-            background: rgba(0,102,204,0.1);
-            border-radius: 15px;
-            padding: 12px;
-            margin: 15px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .time-icon {
-            width: 35px;
-            height: 35px;
-            background: var(--primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Order Button */
+        /* Tugma */
         .btn-order {
             width: 100%;
-            padding: 20px;
-            background: linear-gradient(135deg, var(--accent), #ff8000);
+            padding: 18px;
+            background: #0066cc;
             border: none;
             border-radius: 50px;
-            color: #000;
-            font-size: 20px;
-            font-weight: 800;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 20px;
-            box-shadow: 0 10px 20px rgba(255,153,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            margin-top: 10px;
         }
 
         .btn-order:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            background: #4a4a4a;
-            box-shadow: none;
         }
 
-        .btn-order:not(:disabled):hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(255,153,0,0.4);
-        }
-
-        .btn-order.loading {
-            color: transparent;
-            position: relative;
-        }
-
-        .btn-order.loading::after {
-            content: '';
-            position: absolute;
-            width: 24px;
-            height: 24px;
-            top: 50%;
-            left: 50%;
-            margin-left: -12px;
-            margin-top: -12px;
-            border: 3px solid #000;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Messages */
         .message {
             position: fixed;
             top: 20px;
             left: 20px;
             right: 20px;
-            padding: 16px 20px;
-            border-radius: 15px;
-            background: var(--card);
-            border-left: 5px solid;
-            z-index: 1000;
+            padding: 15px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             display: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
         }
 
         .message.show {
             display: block;
-            animation: slideDown 0.3s;
-        }
-
-        .message.success {
-            border-color: var(--success);
         }
 
         .message.error {
-            border-color: var(--danger);
+            border-left: 4px solid #ef4444;
         }
 
-        @keyframes slideDown {
-            from { transform: translateY(-100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* Loading */
-        .loading-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 15px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            margin: 10px 0;
-        }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0,102,204,0.3);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        /* Footer */
-        .footer {
-            padding: 15px;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 12px;
-        }
-
-        .powered-by {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            margin-top: 5px;
-        }
-
-        /* Manual Location */
-        .manual-location {
-            background: rgba(255,153,0,0.1);
-            border-radius: 15px;
-            padding: 12px;
-            margin: 10px 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .manual-location button {
-            background: var(--accent);
-            border: none;
-            color: #000;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: 600;
-            cursor: pointer;
+        .message.success {
+            border-left: 4px solid #10b981;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div class="header">
-        <h1>
-            <span>🚖</span>
-            TEZKOR TAKSI
-        </h1>
-        <div class="header-badge">
-            <span>⚡</span>
-            <span>MapTiler Pro | GPS muammosi hal qilindi</span>
-        </div>
+        <h1>🚖 TEZKOR TAKSI</h1>
     </div>
 
-    <!-- GPS Status Card -->
-    <div class="gps-status-card" id="gpsStatusCard">
-        <div class="gps-status-icon" id="gpsIcon">📍</div>
-        <div class="gps-status-text">
-            <div class="gps-status-title" id="gpsTitle">GPS aniqlanmoqda...</div>
-            <div class="gps-status-desc" id="gpsDesc">Iltimos, kuting yoki joylashuv ruxsatini bering</div>
-        </div>
-        <button class="retry-btn" onclick="retryGPS()" id="retryBtn" style="display: none;">🔄 Qayta urinish</button>
-    </div>
-
-    <!-- Manual Location (hidden by default) -->
-    <div class="manual-location" id="manualLocation" style="display: none;">
-        <span>📍</span>
-        <span style="flex: 1;">GPS ishlamayapti. Manzilni qo'lda tanlang</span>
-        <button onclick="useTashkent()">Toshkent</button>
-    </div>
-
-    <!-- Map Container -->
-    <div class="map-container">
+    <!-- Xarita (yashirin - xohlasangiz ko'rsating) -->
+    <div class="map-container" id="mapContainer" style="display: none;">
         <div id="map"></div>
-        
-        <!-- Location Overlay -->
-        <div class="map-overlay" id="location_overlay">
-            <div class="location-row">
-                <div class="location-icon">📍</div>
-                <div class="location-text">
-                    <div class="location-label">
-                        <span>Sizning joylashuvingiz</span>
-                        <div class="gps-signal searching" id="gpsSignal"></div>
-                    </div>
-                    <div class="location-address" id="current_address">Aniqlanmoqda...</div>
-                </div>
+    </div>
+
+    <div class="content">
+        <!-- Sizning joylashuvingiz -->
+        <div class="location-card">
+            <div class="location-header">
+                <span>📍</span>
+                <span>Sizning joylashuvingiz</span>
+            </div>
+            <div class="location-address" id="currentAddress">Aniqlanmoqda...</div>
+            <div class="gps-status" id="gpsStatus">
+                <span>⏳ GPS aniqlanmoqda...</span>
             </div>
         </div>
-    </div>
 
-    <!-- Content -->
-    <div class="content">
-        <!-- Search Section -->
+        <!-- Qayerga boramiz? (MAJBURIY EMAS) -->
         <div class="search-section">
-            <div class="search-title">
-                <span>🔍</span>
-                <span>Qayerga bormoqchisiz?</span>
+            <div class="location-header">
+                <span>🏁</span>
+                <span>Qayerga boramiz? (ixtiyoriy)</span>
             </div>
             
-            <div class="search-input">
-                <input 
-                    type="text" 
-                    id="destination_input" 
-                    placeholder="Manzil nomini kiriting (masalan: Xonqiz, Chimyon...)"
-                    autocomplete="off"
-                >
-                <button class="clear-btn" onclick="clearDestination()">✕</button>
-            </div>
+            <input 
+                type="text" 
+                class="search-input" 
+                id="destinationInput" 
+                placeholder="Manzil nomini kiriting (yoki bo'sh qoldiring)"
+            >
 
-            <!-- Suggestions -->
-            <div class="suggestions" id="suggestions"></div>
-
-            <!-- Quick Places -->
-            <div class="quick-places">
-                <div class="quick-place" onclick="quickDestination('Xonqiz, Toshkent, O‘zbekiston')">
-                    <i>🏘</i>
-                    <span>Xonqiz</span>
-                </div>
-                <div class="quick-place" onclick="quickDestination('Chimyon, Toshkent, O‘zbekiston')">
-                    <i>⛰</i>
-                    <span>Chimyon</span>
-                </div>
-                <div class="quick-place" onclick="quickDestination('Mindon, Toshkent, O‘zbekiston')">
-                    <i>🏡</i>
-                    <span>Mindon</span>
-                </div>
-                <div class="quick-place" onclick="quickDestination('Toshkent, O‘zbekiston')">
-                    <i>🏙</i>
-                    <span>Toshkent</span>
-                </div>
-            </div>
-
-            <!-- Loading Indicator -->
-            <div class="loading-indicator" id="loading_indicator" style="display: none;">
-                <div class="spinner"></div>
-                <span>Manzil qidirilmoqda...</span>
+            <div class="quick-buttons">
+                <button class="quick-btn" onclick="setDestination('Xonqiz')">🏘 Xonqiz</button>
+                <button class="quick-btn" onclick="setDestination('Chimyon')">⛰ Chimyon</button>
+                <button class="quick-btn" onclick="setDestination('Mindon')">🏡 Mindon</button>
+                <button class="quick-btn" onclick="setDestination('')">🚖 Faqat GPS</button>
             </div>
         </div>
 
-        <!-- Selected Destination -->
-        <div class="search-section" id="selected_destination_section" style="display: none;">
-            <div class="search-title">
-                <span>🏁</span>
-                <span>Tanlangan manzil</span>
+        <!-- Narx (faqat masofa bo'lsa) -->
+        <div class="price-card" id="priceCard" style="display: none;">
+            <div class="price-row">
+                <span>📏 Masofa</span>
+                <span id="distanceValue">0 km</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="background: var(--accent); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                    🏁
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 600;" id="selected_destination_name"></div>
-                    <div style="font-size: 12px; color: var(--text-secondary);" id="selected_destination_coords"></div>
-                </div>
+            <div class="price-row">
+                <span>💰 Boshlang'ich narx</span>
+                <span>4,000 so'm</span>
             </div>
-        </div>
-
-        <!-- Price Card -->
-        <div class="price-card" id="price_card" style="display: none;">
-            <div class="distance-info">
-                <span>📏 Umumiy masofa</span>
-                <div>
-                    <span class="distance-value" id="distance_value">0.0</span>
-                    <span class="distance-unit">km</span>
-                </div>
+            <div class="price-row">
+                <span>📊 Yo'l haqi</span>
+                <span id="tripPrice">0 so'm</span>
             </div>
-
-            <div class="price-breakdown">
-                <div class="price-row">
-                    <span>🚖 Boshlang'ich narx</span>
-                    <span class="price-value" id="base_price">4,000 so'm</span>
-                </div>
-                <div class="price-row">
-                    <span>📊 Yo'l haqi (<span id="price_per_km">1,500</span> so'm/km)</span>
-                    <span class="price-value" id="distance_price">0 so'm</span>
-                </div>
-            </div>
-
-            <div class="time-info">
-                <div class="time-icon">⏱</div>
-                <div style="flex: 1;">
-                    <div style="font-size: 13px; color: var(--text-secondary);">Taxminiy yetib borish vaqti</div>
-                    <div style="font-weight: 600;" id="estimated_time">Hisoblanmoqda...</div>
-                </div>
-            </div>
-
             <div class="price-row total">
-                <span>💰 Umumiy narx</span>
-                <span class="price-value" id="total_price">4,000 so'm</span>
+                <span>Jami:</span>
+                <span id="totalPrice">4,000 so'm</span>
             </div>
         </div>
 
-        <!-- Order Button -->
-        <button class="btn-order" id="order_btn" disabled onclick="sendOrder()">
-            <span>🚖</span>
-            BUYURTMA BERISH
+        <!-- Buyurtma berish tugmasi -->
+        <button class="btn-order" id="orderBtn" onclick="sendOrder()">
+            🚖 BUYURTMA BERISH
         </button>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <div>© 2025 Tezkor Taksi</div>
-        <div class="powered-by">
-            <span>Powered by</span>
-            <img src="https://cdn.maptiler.com/maptiler-sdk-js/v2.3.0/maptiler-logo.svg" alt="MapTiler" height="20">
-        </div>
+    <!-- Xabarlar -->
+    <div class="message" id="errorMessage">
+        <span id="errorText"></span>
     </div>
-
-    <!-- Messages -->
-    <div class="message" id="error_message">
-        <span id="error_text"></span>
-    </div>
-    <div class="message" id="success_message">
-        <span id="success_text"></span>
+    <div class="message" id="successMessage">
+        <span id="successText"></span>
     </div>
 
     <script>
-        // Telegram Web App
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
-        tg.setHeaderColor('#0066cc');
-        tg.setBackgroundColor('#0a0f1a');
 
-        // ==================== MAPTILER KONFIGURATSIYA ====================
-        // BEPUL API KEY - https://cloud.maptiler.com/account/keys/ dan oling
-        maptilersdk.config.apiKey = 'YOUR_FREE_MAPTILER_API_KEY'; // <-- BU YERGA O'Z KEYINGIZNI YOZING
-        
-        // Ma'lumotlar
+        // ==================== BIGDATACLOUD - JOY NOMINI ANIQLASH ====================
+        // Bepul, API kalit kerak emas, IP orqali fallback bilan [citation:1]
+
         let userLat = null;
         let userLon = null;
         let userAddress = '';
-        let map = null;
-        let userMarker = null;
-        let destMarker = null;
-        let routeLine = null;
+        let userCity = '';
+        let destination = '';
         
-        let selectedDestination = null;
-        let selectedCoords = null;
-        
-        // Narx sozlamalari
         const BASE_PRICE = 4000;
         const PRICE_PER_KM = 1500;
-        const AVG_SPEED = 30; // km/h
-        
-        // GPS holati
-        let gpsAttempts = 0;
-        const MAX_GPS_ATTEMPTS = 3;
 
-        // ==================== GPS NI QAYTA URINISH ====================
-        function retryGPS() {
-            gpsAttempts++;
-            updateGPSStatus('searching', 'GPS qayta urinilmoqda...', 'Iltimos, joylashuv ruxsatini bering');
-            
+        // GPS ni boshlash
+        function initLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     gpsSuccess,
@@ -817,452 +327,188 @@
                     }
                 );
             } else {
-                showManualLocation();
+                // GPS qo'llab-quvvatlanmasa, IP orqali
+                getLocationByIP();
             }
         }
 
-        // ==================== GPS MUVAFFAQIYATLI ====================
-        function gpsSuccess(pos) {
+        // GPS muvaffaqiyatli
+        async function gpsSuccess(pos) {
             userLat = pos.coords.latitude;
             userLon = pos.coords.longitude;
             
-            console.log('GPS aniqlandi:', userLat, userLon);
+            document.getElementById('gpsStatus').innerHTML = '🟢 GPS aniqlandi';
             
-            updateGPSStatus('active', 'GPS aniqlandi', 'Manzil aniqlanmoqda...');
+            // BigDataCloud orqali manzil nomini olish [citation:10]
+            await getAddressFromCoords(userLat, userLon);
             
-            // Xaritani yaratish
-            initMapWithLocation(userLat, userLon);
-            
-            // Manzil nomini olish
-            reverseGeocode(userLat, userLon);
-            
-            // Tugmani faollashtirish
-            document.getElementById('order_btn').disabled = false;
-            document.getElementById('retryBtn').style.display = 'none';
-            document.getElementById('manualLocation').style.display = 'none';
+            // Xaritani ko'rsatish (agar xohlasangiz)
+            // showMap(userLat, userLon);
         }
 
-        // ==================== GPS XATOLIK ====================
-        function gpsError(error) {
-            console.error('GPS xatosi:', error);
+        // GPS xatolik
+        function gpsError(err) {
+            console.log('GPS xatosi:', err);
+            document.getElementById('gpsStatus').innerHTML = '🟡 GPS aniqlanmadi, IP orqali...';
             
-            let errorMessage = '';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMessage = 'Joylashuv ruxsati berilmadi';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMessage = 'GPS signali topilmadi';
-                    break;
-                case error.TIMEOUT:
-                    errorMessage = 'GPS vaqti tugadi';
-                    break;
-                default:
-                    errorMessage = 'Noma\'lum xatolik';
-            }
-            
-            updateGPSStatus('inactive', 'GPS xatosi', errorMessage);
-            
-            if (gpsAttempts < MAX_GPS_ATTEMPTS) {
-                document.getElementById('retryBtn').style.display = 'block';
-            } else {
-                showManualLocation();
-            }
+            // IP orqali joylashuv [citation:1]
+            getLocationByIP();
         }
 
-        // ==================== GPS STATUS YANGILASH ====================
-        function updateGPSStatus(status, title, desc) {
-            const signal = document.getElementById('gpsSignal');
-            const icon = document.getElementById('gpsIcon');
-            const titleEl = document.getElementById('gpsTitle');
-            const descEl = document.getElementById('gpsDesc');
-            
-            signal.className = 'gps-signal';
-            signal.classList.add(status);
-            
-            titleEl.textContent = title;
-            descEl.textContent = desc;
-            
-            if (status === 'active') {
-                icon.innerHTML = '✅';
-            } else if (status === 'searching') {
-                icon.innerHTML = '🔄';
-            } else {
-                icon.innerHTML = '❌';
-            }
-        }
-
-        // ==================== MANUAL LOCATION ====================
-        function showManualLocation() {
-            document.getElementById('manualLocation').style.display = 'flex';
-            document.getElementById('retryBtn').style.display = 'none';
-            updateGPSStatus('inactive', 'GPS ishlamayapti', 'Manzilni qo\'lda tanlang');
-        }
-
-        function useTashkent() {
-            userLat = 41.2995;
-            userLon = 69.2401;
-            
-            updateGPSStatus('active', 'Toshkent tanlandi', 'Standart joylashuv');
-            
-            initMapWithLocation(userLat, userLon);
-            reverseGeocode(userLat, userLon);
-            
-            document.getElementById('order_btn').disabled = false;
-            document.getElementById('manualLocation').style.display = 'none';
-        }
-
-        // ==================== XARITANI YARATISH ====================
-        function initMapWithLocation(lat, lon) {
+        // ==================== BIGDATACLOUD REVERSE GEOCODING ====================
+        // Koordinatadan manzil nomiga [citation:1][citation:10]
+        async function getAddressFromCoords(lat, lon) {
             try {
-                if (!map) {
-                    map = new maptilersdk.Map({
-                        container: 'map',
-                        style: maptilersdk.MapStyle.STREETS,
-                        center: [lon, lat],
-                        zoom: 15,
-                        navigationControl: true,
-                        geolocateControl: true
-                    });
-
-                    map.addControl(new maptilersdk.NavigationControl());
-                } else {
-                    map.flyTo({
-                        center: [lon, lat],
-                        zoom: 15,
-                        essential: true
-                    });
-                }
-
-                // User marker
-                if (userMarker) userMarker.remove();
+                const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=uz`;
                 
-                userMarker = new maptilersdk.Marker({
-                    color: '#0066cc',
-                    draggable: false
-                })
-                    .setLngLat([lon, lat])
-                    .setPopup(new maptilersdk.Popup().setHTML('Siz shu yerdasiz'))
-                    .addTo(map);
-
-            } catch (e) {
-                console.error('Xarita yaratish xatosi:', e);
-            }
-        }
-
-        // ==================== MANZIL NOMINI OLISH (Reverse Geocoding) ====================
-        async function reverseGeocode(lat, lon) {
-            try {
-                const result = await maptiler.geocoding.reverse([lon, lat], {
-                    language: 'uz',
-                    limit: 1
-                });
-
-                if (result.features && result.features.length > 0) {
-                    const feature = result.features[0];
-                    userAddress = feature.place_name_uz || feature.place_name;
-                    
-                    // Manzilni qisqartirish
-                    const parts = userAddress.split(',').slice(0, 3);
-                    userAddress = parts.join(',');
-                    
-                    document.getElementById('current_address').innerHTML = userAddress;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Ma'lumotlarni olish
+                const country = data.countryName || '';
+                const city = data.city || data.locality || '';
+                const locality = data.locality || '';
+                
+                userCity = city;
+                
+                // Manzilni yig'ish
+                if (city && locality) {
+                    userAddress = `${city}, ${locality}`;
+                } else if (city) {
+                    userAddress = city;
                 } else {
-                    document.getElementById('current_address').innerHTML = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                    userAddress = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
                 }
+                
+                document.getElementById('currentAddress').innerHTML = userAddress;
+                document.getElementById('gpsStatus').innerHTML = '✅ Joylashuv aniqlandi: ' + userCity;
+                
             } catch (e) {
-                console.error('Reverse geocoding xatosi:', e);
-                document.getElementById('current_address').innerHTML = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                console.error('BigDataCloud xatosi:', e);
+                userAddress = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                document.getElementById('currentAddress').innerHTML = userAddress;
             }
         }
 
-        // ==================== MANZIL QIDIRISH (Geocoding) ====================
-        let searchTimeout;
-        const searchInput = document.getElementById('destination_input');
-        
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            const query = this.value.trim();
-            
-            if (query.length < 2) {
-                document.getElementById('suggestions').classList.remove('show');
-                return;
+        // ==================== IP ORQALI JOYLASHUV (fallback) ====================
+        // GPS ishlamasa, IP orqali [citation:1]
+        async function getLocationByIP() {
+            try {
+                const url = 'https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=uz';
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const country = data.countryName || '';
+                const city = data.city || data.locality || 'Noma\'lum';
+                
+                userCity = city;
+                userAddress = city;
+                
+                document.getElementById('currentAddress').innerHTML = userAddress + ' (IP orqali)';
+                document.getElementById('gpsStatus').innerHTML = '🟡 Taxminiy joylashuv (IP)';
+                
+                // IP orqali koordinata bo'lmasa, null qoldiramiz
+                userLat = null;
+                userLon = null;
+                
+            } catch (e) {
+                console.error('IP geolocation xatosi:', e);
+                document.getElementById('currentAddress').innerHTML = 'Joylashuv aniqlanmadi';
             }
+        }
+
+        // ==================== MANZIL TANLASH (MAJBURIY EMAS) ====================
+        function setDestination(dest) {
+            destination = dest;
+            document.getElementById('destinationInput').value = dest;
             
-            document.getElementById('loading_indicator').style.display = 'flex';
-            
-            searchTimeout = setTimeout(async () => {
-                await searchLocations(query);
-            }, 500);
+            if (dest) {
+                // Agar manzil tanlangan bo'lsa, taxminiy masofa hisoblash
+                const mockDistance = dest === 'Xonqiz' ? 5.2 : 
+                                     dest === 'Chimyon' ? 8.7 : 
+                                     dest === 'Mindon' ? 3.5 : 3.0;
+                
+                showPrice(mockDistance);
+            } else {
+                document.getElementById('priceCard').style.display = 'none';
+            }
+        }
+
+        // Input o'zgarishi
+        document.getElementById('destinationInput').addEventListener('input', function(e) {
+            destination = e.target.value;
+            if (destination) {
+                showPrice(3.0); // Taxminiy masofa
+            } else {
+                document.getElementById('priceCard').style.display = 'none';
+            }
         });
 
-        async function searchLocations(query) {
-            try {
-                const result = await maptiler.geocoding.forward(query + ', O‘zbekiston', {
-                    language: 'uz',
-                    limit: 5,
-                    proximity: userLat && userLon ? [userLon, userLat] : undefined
-                });
-
-                document.getElementById('loading_indicator').style.display = 'none';
-
-                if (result.features && result.features.length > 0) {
-                    showSuggestions(result.features);
-                } else {
-                    document.getElementById('suggestions').classList.remove('show');
-                }
-            } catch (e) {
-                console.error('Qidiruv xatosi:', e);
-                document.getElementById('loading_indicator').style.display = 'none';
-            }
-        }
-
-        function showSuggestions(features) {
-            const suggestionsDiv = document.getElementById('suggestions');
-            suggestionsDiv.innerHTML = '';
+        // Narxni ko'rsatish
+        function showPrice(distance) {
+            const tripPrice = distance * PRICE_PER_KM;
+            const total = BASE_PRICE + tripPrice;
             
-            features.forEach(feature => {
-                const placeName = feature.place_name_uz || feature.place_name;
-                
-                let icon = '📍';
-                if (feature.place_type[0] === 'city') icon = '🏙';
-                else if (feature.place_type[0] === 'town') icon = '🏘';
-                else if (feature.place_type[0] === 'village') icon = '🏡';
-                
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.innerHTML = `
-                    <div class="suggestion-icon">${icon}</div>
-                    <div class="suggestion-text">
-                        <div class="suggestion-title">${placeName.split(',')[0]}</div>
-                        <div class="suggestion-subtitle">${placeName}</div>
-                    </div>
-                `;
-                
-                div.onclick = () => selectLocation(feature);
-                suggestionsDiv.appendChild(div);
-            });
-            
-            suggestionsDiv.classList.add('show');
-        }
-
-        // ==================== MANZILNI TANLASH ====================
-        function selectLocation(feature) {
-            const coords = feature.center;
-            const lat = coords[1];
-            const lon = coords[0];
-            const name = feature.place_name_uz || feature.place_name;
-            
-            selectedDestination = name;
-            selectedCoords = { lat, lon };
-            
-            document.getElementById('destination_input').value = name.split(',')[0];
-            document.getElementById('suggestions').classList.remove('show');
-            
-            document.getElementById('selected_destination_name').innerHTML = name.split(',')[0];
-            document.getElementById('selected_destination_coords').innerHTML = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-            document.getElementById('selected_destination_section').style.display = 'block';
-            
-            showDestinationOnMap(lat, lon, name);
-            
-            if (userLat && userLon) {
-                calculateDistance(lat, lon);
-            } else {
-                showError('Avval joylashuvingiz aniqlanishi kerak');
-            }
-        }
-
-        function quickDestination(query) {
-            document.getElementById('destination_input').value = query.split(',')[0];
-            searchLocations(query);
-        }
-
-        // ==================== XARITADA KO'RSATISH ====================
-        function showDestinationOnMap(lat, lon, name) {
-            if (destMarker) destMarker.remove();
-            
-            destMarker = new maptilersdk.Marker({
-                color: '#ff9900'
-            })
-                .setLngLat([lon, lat])
-                .setPopup(new maptilersdk.Popup().setHTML(`🏁 ${name}`))
-                .addTo(map);
-
-            if (userLat && userLon) {
-                if (routeLine) routeLine.remove();
-                
-                routeLine = new maptilersdk.LineString([
-                    [userLon, userLat],
-                    [lon, lat]
-                ]);
-
-                map.addLayer({
-                    id: 'route',
-                    type: 'line',
-                    source: {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: {
-                                type: 'LineString',
-                                coordinates: [[userLon, userLat], [lon, lat]]
-                            }
-                        }
-                    },
-                    layout: {
-                        'line-join': 'round',
-                        'line-cap': 'round'
-                    },
-                    paint: {
-                        'line-color': '#ff9900',
-                        'line-width': 4,
-                        'line-dasharray': [2, 2]
-                    }
-                });
-
-                const bounds = new maptilersdk.LngLatBounds()
-                    .extend([userLon, userLat])
-                    .extend([lon, lat]);
-                
-                map.fitBounds(bounds, { padding: 50 });
-            }
-        }
-
-        // ==================== MASOFA VA NARX HISOBI ====================
-        function calculateDistance(destLat, destLon) {
-            if (!userLat || !userLon || !destLat || !destLon) return;
-
-            // Haversine formulasi
-            const R = 6371;
-            const dLat = (destLat - userLat) * Math.PI / 180;
-            const dLon = (destLon - userLon) * Math.PI / 180;
-            const a = 
-                Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(userLat * Math.PI / 180) * Math.cos(destLat * Math.PI / 180) * 
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            const distance = R * c;
-
-            const distancePrice = distance * PRICE_PER_KM;
-            const totalPrice = BASE_PRICE + distancePrice;
-            const timeMinutes = Math.round((distance / AVG_SPEED) * 60);
-
-            document.getElementById('distance_value').textContent = distance.toFixed(1);
-            document.getElementById('distance_price').textContent = Math.round(distancePrice / 100) * 100 + ' so\'m';
-            document.getElementById('total_price').textContent = Math.round(totalPrice / 100) * 100 + ' so\'m';
-            document.getElementById('estimated_time').textContent = timeMinutes + ' daqiqa';
-            
-            document.getElementById('price_card').style.display = 'block';
+            document.getElementById('distanceValue').innerHTML = distance.toFixed(1) + ' km';
+            document.getElementById('tripPrice').innerHTML = Math.round(tripPrice / 100) * 100 + ' so\'m';
+            document.getElementById('totalPrice').innerHTML = Math.round(total / 100) * 100 + ' so\'m';
+            document.getElementById('priceCard').style.display = 'block';
         }
 
         // ==================== BUYURTMA YUBORISH ====================
         async function sendOrder() {
-            if (!selectedDestination || !selectedCoords) {
-                showError('Iltimos, boradigan joyingizni tanlang!');
-                return;
-            }
-
-            if (!userLat || !userLon) {
+            if (!userAddress) {
                 showError('Joylashuvingiz aniqlanmadi!');
                 return;
             }
 
-            const btn = document.getElementById('order_btn');
-            btn.classList.add('loading');
+            const btn = document.getElementById('orderBtn');
             btn.disabled = true;
+            btn.innerHTML = '⏳ Yuborilmoqda...';
 
             try {
-                const distance = parseFloat(document.getElementById('distance_value').textContent);
-                const price = parseInt(document.getElementById('total_price').textContent.replace(/[^0-9]/g, ''));
-                
+                // Buyurtma ma'lumotlari
                 const orderData = {
+                    from: userAddress,
+                    from_city: userCity,
+                    to: destination || '',
                     lat: userLat,
                     lon: userLon,
-                    from: userAddress,
-                    to: selectedDestination.split(',')[0],
-                    to_lat: selectedCoords.lat,
-                    to_lon: selectedCoords.lon,
-                    distance: distance.toFixed(1),
-                    price: price,
-                    time: document.getElementById('estimated_time').textContent
+                    time: new Date().toISOString()
                 };
 
+                // Telegramga yuborish
                 tg.sendData(JSON.stringify(orderData));
                 
                 showSuccess('✅ Buyurtma yuborildi!');
                 
-                setTimeout(() => {
-                    tg.close();
-                }, 1000);
+                setTimeout(() => tg.close(), 1000);
                 
             } catch (e) {
-                console.error('Xatolik:', e);
-                btn.classList.remove('loading');
                 btn.disabled = false;
-                showError('Xatolik yuz berdi. Qaytadan urining.');
+                btn.innerHTML = '🚖 BUYURTMA BERISH';
+                showError('Xatolik yuz berdi');
             }
         }
 
-        // ==================== YORDAMCHI FUNKSIYALAR ====================
-        function clearDestination() {
-            document.getElementById('destination_input').value = '';
-            document.getElementById('suggestions').classList.remove('show');
-            document.getElementById('selected_destination_section').style.display = 'none';
-            document.getElementById('price_card').style.display = 'none';
-            
-            if (destMarker) destMarker.remove();
-            if (routeLine) map.removeLayer('route');
-            
-            selectedDestination = null;
-            selectedCoords = null;
-        }
-
+        // Xabarlar
         function showError(msg) {
-            const el = document.getElementById('error_message');
-            document.getElementById('error_text').innerHTML = msg;
-            el.classList.add('show');
+            const el = document.getElementById('errorMessage');
+            document.getElementById('errorText').innerHTML = msg;
+            el.classList.add('show', 'error');
             setTimeout(() => el.classList.remove('show'), 3000);
         }
 
         function showSuccess(msg) {
-            const el = document.getElementById('success_message');
-            document.getElementById('success_text').innerHTML = msg;
-            el.classList.add('show');
+            const el = document.getElementById('successMessage');
+            document.getElementById('successText').innerHTML = msg;
+            el.classList.add('show', 'success');
             setTimeout(() => el.classList.remove('show'), 2000);
         }
 
-        // ==================== BOSHLASH ====================
-        function init() {
-            // GPS ni boshlash
-            if (navigator.geolocation) {
-                retryGPS();
-            } else {
-                showManualLocation();
-            }
-        }
-
-        // Clear button
-        document.querySelector('.clear-btn').onclick = clearDestination;
-
-        // Click outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.search-input') && !e.target.closest('.suggestions')) {
-                document.getElementById('suggestions').classList.remove('show');
-            }
-        });
-
-        // Enter tugmasi
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (selectedDestination) {
-                    sendOrder();
-                }
-            }
-        });
-
         // Boshlash
-        init();
+        initLocation();
     </script>
 </body>
 </html>

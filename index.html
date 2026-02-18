@@ -182,7 +182,7 @@
             font-size: 18px;
         }
         
-        select, input {
+        select, input, textarea {
             width: 100%;
             padding: 16px;
             background: #f8f9fa;
@@ -190,6 +190,10 @@
             border-radius: 15px;
             font-size: 16px;
             transition: all 0.3s;
+            font-family: inherit;
+        }
+        
+        select {
             appearance: none;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230088cc'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
             background-repeat: no-repeat;
@@ -197,58 +201,98 @@
             background-size: 20px;
         }
         
-        select:hover, input:hover {
+        select:hover, input:hover, textarea:hover {
             border-color: var(--primary);
             background: white;
         }
         
-        select:focus, input:focus {
+        select:focus, input:focus, textarea:focus {
             outline: none;
             border-color: var(--primary);
             background: white;
             box-shadow: 0 0 0 4px rgba(0, 136, 204, 0.1);
         }
         
-        #custom_destination {
-            margin-top: 10px;
-            background-image: none;
+        textarea {
+            resize: vertical;
+            min-height: 80px;
         }
         
-        /* Quick Destinations */
-        .quick-destinations {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        .optional-badge {
+            display: inline-block;
+            background: #e0e0e0;
+            color: #666;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+        
+        .destination-options {
+            display: flex;
+            flex-direction: column;
             gap: 10px;
-            margin-bottom: 20px;
         }
         
-        .quick-btn {
-            background: var(--card);
-            padding: 15px;
+        .destination-option {
+            background: #f8f9fa;
             border-radius: 15px;
-            border: 2px solid transparent;
-            text-align: center;
-            font-weight: 500;
+            padding: 15px;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: var(--shadow);
+            border: 2px solid transparent;
         }
         
-        .quick-btn:hover {
+        .destination-option:hover {
+            background: white;
             border-color: var(--primary);
-            transform: translateY(-2px);
         }
         
-        .quick-btn.selected {
+        .destination-option.selected {
             background: var(--primary);
             color: white;
             border-color: var(--primary);
         }
         
-        .quick-btn i {
-            display: block;
-            font-size: 24px;
+        .destination-option.selected .optional-badge {
+            background: white;
+            color: var(--primary);
+        }
+        
+        .option-title {
+            font-weight: 600;
             margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .option-desc {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .custom-input {
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .custom-input.show {
+            display: block;
+        }
+        
+        .skip-option {
+            text-align: center;
+            padding: 15px;
+            color: var(--text-light);
+            font-size: 14px;
+            cursor: pointer;
+            border-top: 1px dashed #ddd;
+            margin-top: 15px;
+        }
+        
+        .skip-option:hover {
+            color: var(--primary);
         }
         
         /* Button */
@@ -336,6 +380,19 @@
             display: flex;
         }
         
+        /* Info box */
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary);
+            font-size: 14px;
+        }
+        
         /* Footer */
         .footer {
             text-align: center;
@@ -396,38 +453,74 @@
             <span id="success_text"></span>
         </div>
         
+        <div class="info-box fade-in">
+            <span>ℹ️</span>
+            <span>Boradigan joyingizni belgilashingiz shart emas. Haydovchiga aytishingiz mumkin.</span>
+        </div>
+        
         <div class="input-group fade-in">
             <div class="input-label">
                 <span>🏁</span>
-                <span>Qayerga borasiz?</span>
+                <span>Qayerga borasiz? (Ixtiyoriy)</span>
+                <span class="optional-badge">shart emas</span>
             </div>
-            <select id="destination_select" onchange="toggleDestination()">
-                <option value="">Manzilni tanlang...</option>
-                <option value="Xonqiz">🏘 Xonqiz qishlog'i</option>
-                <option value="Qo'rg'ontepa">🏘 Qo'rg'ontepa qishlog'i</option>
-                <option value="Chimyon">🏔 Chimyon qishlog'i</option>
-                <option value="Mindon">🏡 Mindon qishlog'i</option>
-                <option value="WRITE_OWN">✍️ Boshqa manzil</option>
-            </select>
-            <input type="text" id="custom_destination" style="display:none;" placeholder="Qishloq nomini kiriting...">
-        </div>
-        
-        <div class="quick-destinations fade-in">
-            <div class="quick-btn" onclick="selectQuick('Xonqiz')">
-                <i>🏘</i>
-                Xonqiz
+            
+            <div class="destination-options">
+                <div class="destination-option" onclick="selectDestination('haydovchiga')" id="opt_driver">
+                    <div class="option-title">
+                        <span>🚖</span>
+                        <span>Haydovchiga aytaman</span>
+                    </div>
+                    <div class="option-desc">Tushganimdan keyin haydovchiga manzilni aytaman</div>
+                </div>
+                
+                <div class="destination-option" onclick="selectDestination('xonqiz')" id="opt_xonqiz">
+                    <div class="option-title">
+                        <span>🏘</span>
+                        <span>Xonqiz qishlog'i</span>
+                    </div>
+                    <div class="option-desc">Xonqiz qishlog'iga borish</div>
+                </div>
+                
+                <div class="destination-option" onclick="selectDestination('qorgontepa')" id="opt_qorgontepa">
+                    <div class="option-title">
+                        <span>🏘</span>
+                        <span>Qo'rg'ontepa qishlog'i</span>
+                    </div>
+                    <div class="option-desc">Qo'rg'ontepa qishlog'iga borish</div>
+                </div>
+                
+                <div class="destination-option" onclick="selectDestination('chimyon')" id="opt_chimyon">
+                    <div class="option-title">
+                        <span>🏔</span>
+                        <span>Chimyon qishlog'i</span>
+                    </div>
+                    <div class="option-desc">Chimyon qishlog'iga borish</div>
+                </div>
+                
+                <div class="destination-option" onclick="selectDestination('mindon')" id="opt_mindon">
+                    <div class="option-title">
+                        <span>🏡</span>
+                        <span>Mindon qishlog'i</span>
+                    </div>
+                    <div class="option-desc">Mindon qishlog'iga borish</div>
+                </div>
+                
+                <div class="destination-option" onclick="selectDestination('custom')" id="opt_custom">
+                    <div class="option-title">
+                        <span>✍️</span>
+                        <span>O'zim yozaman</span>
+                    </div>
+                    <div class="option-desc">Boshqa manzilni o'zingiz yozing</div>
+                </div>
             </div>
-            <div class="quick-btn" onclick="selectQuick('Qo\'rg\'ontepa')">
-                <i>🏘</i>
-                Qo'rg'ontepa
+            
+            <div class="custom-input" id="custom_input">
+                <textarea id="custom_destination" placeholder="Manzilni to'liq yozing... (ixtiyoriy)"></textarea>
             </div>
-            <div class="quick-btn" onclick="selectQuick('Chimyon')">
-                <i>🏔</i>
-                Chimyon
-            </div>
-            <div class="quick-btn" onclick="selectQuick('Mindon')">
-                <i>🏡</i>
-                Mindon
+            
+            <div class="skip-option" onclick="skipDestination()">
+                <span>⏭️ Bu qadamni o'tkazib yuborish</span>
             </div>
         </div>
     </div>
@@ -451,32 +544,45 @@
         let userLon = null;
         let villageName = "Noma'lum qishloq";
         let fullAddress = "";
+        let selectedDestination = "haydovchiga"; // Standart: haydovchiga aytaman
+        let customDestination = "";
         
-        function toggleDestination() {
-            const select = document.getElementById('destination_select');
-            const custom = document.getElementById('custom_destination');
+        // Manzil tanlash
+        function selectDestination(type) {
+            selectedDestination = type;
             
-            if (select.value === "WRITE_OWN") {
-                custom.style.display = "block";
-                custom.focus();
+            // Barcha optionlardan selected class ni olib tashlash
+            document.querySelectorAll('.destination-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Tanlangan optionni belgilash
+            document.getElementById(`opt_${type}`).classList.add('selected');
+            
+            // Custom inputni ko'rsatish/yashirish
+            const customInput = document.getElementById('custom_input');
+            if (type === 'custom') {
+                customInput.classList.add('show');
+                document.getElementById('custom_destination').focus();
             } else {
-                custom.style.display = "none";
-                if (select.value) {
-                    selectQuick(select.value);
-                }
+                customInput.classList.remove('show');
             }
+            
+            console.log("Tanlangan manzil:", type);
         }
         
-        function selectQuick(village) {
-            // Quick tanlash
-            document.getElementById('destination_select').value = village;
-            document.getElementById('custom_destination').style.display = "none";
+        // O'tkazib yuborish
+        function skipDestination() {
+            selectedDestination = "haydovchiga";
             
-            // Selected class ni yangilash
-            document.querySelectorAll('.quick-btn').forEach(btn => {
-                btn.classList.remove('selected');
+            document.querySelectorAll('.destination-option').forEach(opt => {
+                opt.classList.remove('selected');
             });
-            event.target.classList.add('selected');
+            
+            document.getElementById('opt_driver').classList.add('selected');
+            document.getElementById('custom_input').classList.remove('show');
+            
+            console.log("Manzil tanlanmadi, haydovchiga aytiladi");
         }
         
         function showError(message) {
@@ -505,79 +611,36 @@
             }
         }
         
-        // Qishloq nomini olish (GPS koordinatalardan)
+        // Qishloq nomini olish
         async function getVillageName(lat, lon) {
             try {
-                // O'zbekiston qishloqlari ma'lumotlar bazasi (oddiy ro'yxat)
                 const villages = {
-                    // Toshkent viloyati
                     "41.3,69.2": "Chirchiq shahri",
                     "41.1,69.3": "Olmaliq shahri",
-                    "41.0,69.1": "Angren shahri",
-                    "41.4,69.5": "Parkent qishlog'i",
-                    "41.5,69.6": "Nurafshon qishlog'i",
-                    "41.2,69.4": "Qibray qishlog'i",
-                    "41.3,69.7": "Bo'ka qishlog'i",
-                    
-                    // Andijon viloyati
                     "40.7,72.3": "Andijon shahri",
                     "40.6,72.4": "Asaka qishlog'i",
-                    "40.8,72.2": "Jalaquduq qishlog'i",
-                    "40.5,72.5": "Paxtaobod qishlog'i",
-                    
-                    // Farg'ona viloyati
                     "40.3,71.7": "Farg'ona shahri",
-                    "40.4,71.8": "Quva qishlog'i",
-                    "40.2,71.9": "Rishton qishlog'i",
-                    "40.1,71.6": "Beshariq qishlog'i",
-                    
-                    // Namangan viloyati
                     "41.0,71.5": "Namangan shahri",
-                    "41.1,71.6": "Chortoq qishlog'i",
-                    "40.9,71.4": "Uychi qishlog'i",
-                    "41.2,71.7": "Pop qishlog'i",
-                    
-                    // Samarqand viloyati
                     "39.6,66.9": "Samarqand shahri",
-                    "39.7,67.0": "Bulung'ur qishlog'i",
-                    "39.5,66.8": "Jomboy qishlog'i",
-                    "39.8,66.7": "Ishtixon qishlog'i",
-                    
-                    // Buxoro viloyati
                     "39.7,64.4": "Buxoro shahri",
-                    "39.8,64.5": "Kogon shahri",
-                    "39.6,64.3": "Vobkent qishlog'i",
-                    "39.9,64.6": "Romitan qishlog'i",
-                    
-                    // Xorazm viloyati
                     "41.3,61.6": "Urganch shahri",
-                    "41.5,61.8": "Xonqa qishlog'i",
-                    "41.4,61.7": "Hazorasp qishlog'i",
-                    
-                    // Qoraqalpog'iston
-                    "42.4,59.4": "Nukus shahri",
-                    "42.5,59.6": "Xo'jayli qishlog'i",
-                    "42.3,59.2": "Kegeyli qishlog'i"
+                    "42.4,59.4": "Nukus shahri"
                 };
                 
-                // Koordinatalarni yaxlitlash
                 const key = lat.toFixed(1) + "," + lon.toFixed(1);
                 
                 if (villages[key]) {
                     return villages[key];
                 }
                 
-                // Agar aniq qishloq topilmasa, OpenStreetMap dan olish
                 const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=uz`);
                 const data = await res.json();
                 
                 if (data.address) {
-                    // Qishloq nomini olish
                     const village = data.address.village || 
                                    data.address.town || 
                                    data.address.city || 
                                    data.address.county ||
-                                   data.address.state_district ||
                                    "Noma'lum qishloq";
                     
                     const area = data.address.state || "O'zbekiston";
@@ -611,7 +674,6 @@
                 userLat = pos.coords.latitude;
                 userLon = pos.coords.longitude;
                 
-                // Qishloq nomini olish
                 const location = await getVillageName(userLat, userLon);
                 
                 if (typeof location === 'string') {
@@ -626,7 +688,6 @@
                 
                 fullAddress = location.full || villageName;
                 
-                // Statusni yangilash
                 document.getElementById('status_icon').innerHTML = "✅";
                 document.getElementById('status_title').innerHTML = "Joylashuvingiz aniqlandi";
                 document.getElementById('status_desc').innerHTML = villageName;
@@ -664,18 +725,23 @@
                 return;
             }
             
-            let toAddr = document.getElementById('destination_select').value;
-            if (!toAddr) {
-                showError("Boradigan joyni tanlang!");
-                return;
-            }
+            // Boradigan joyni aniqlash
+            let toAddress = "";
             
-            if (toAddr === "WRITE_OWN") {
-                toAddr = document.getElementById('custom_destination').value;
-                if (!toAddr.trim()) {
-                    showError("Manzilni kiriting!");
-                    document.getElementById('custom_destination').focus();
-                    return;
+            if (selectedDestination === "haydovchiga") {
+                toAddress = "Haydovchiga aytaman";
+            } else if (selectedDestination === "xonqiz") {
+                toAddress = "Xonqiz qishlog'i";
+            } else if (selectedDestination === "qorgontepa") {
+                toAddress = "Qo'rg'ontepa qishlog'i";
+            } else if (selectedDestination === "chimyon") {
+                toAddress = "Chimyon qishlog'i";
+            } else if (selectedDestination === "mindon") {
+                toAddress = "Mindon qishlog'i";
+            } else if (selectedDestination === "custom") {
+                toAddress = document.getElementById('custom_destination').value.trim();
+                if (!toAddress) {
+                    toAddress = "Haydovchiga aytaman"; // Agar bo'sh bo'lsa
                 }
             }
             
@@ -685,14 +751,13 @@
                 const orderData = {
                     lat: userLat,
                     lon: userLon,
-                    from: villageName,  // Qishloq nomi yuboriladi
-                    to: toAddr,
-                    address: fullAddress // To'liq manzil (ixtiyoriy)
+                    from: villageName,
+                    to: toAddress,
+                    full_address: fullAddress
                 };
 
                 console.log("Yuborilayotgan ma'lumot:", orderData);
                 
-                // Telegramga yuborish
                 tg.sendData(JSON.stringify(orderData));
                 
                 showSuccess("✅ Buyurtma yuborildi!");
@@ -707,6 +772,9 @@
                 console.error(e);
             }
         }
+        
+        // Standart tanlov
+        selectDestination('haydovchiga');
     </script>
 </body>
 </html>

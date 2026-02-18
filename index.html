@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tezkor Taksi</title>
+    <title>Tezkor Taksi | Buyurtma</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,270 +12,584 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
-        
+
         :root {
-            --accent: #f1c40f;
-            --accent-dark: #d4ac0d;
-            --bg: #0a0f1e;
-            --card: #1a1f30;
-            --text: #ffffff;
-            --text-secondary: #a0a5b8;
-            --success: #2ecc71;
-            --error: #e74c3c;
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --primary-light: #4895ef;
+            --secondary: #4cc9f0;
+            --success: #06d6a0;
+            --warning: #ffbe0b;
+            --danger: #ef476f;
+            --dark: #0b132b;
+            --darker: #060b1a;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --card-border: rgba(255, 255, 255, 0.05);
+            --shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.5);
+            --shadow-sm: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+            --gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            --gradient-success: linear-gradient(135deg, var(--success) 0%, #0cb892 100%);
+            --gradient-warning: linear-gradient(135deg, var(--warning) 0%, #ff9f1c 100%);
         }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            margin: 0;
-            background: var(--bg);
-            color: var(--text);
+            background: linear-gradient(145deg, var(--darker) 0%, var(--dark) 100%);
+            color: var(--light);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
             position: relative;
+            overflow-x: hidden;
         }
-        
-        header {
-            padding: 20px 15px;
-            text-align: center;
-            background: linear-gradient(135deg, var(--card) 0%, #151b2b 100%);
-            border-bottom: 3px solid var(--accent);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(67, 97, 238, 0.1) 0%, transparent 70%);
+            z-index: 0;
         }
-        
-        header h1 {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            background: linear-gradient(45deg, var(--accent), #f39c12);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
+
+        /* Header */
+        .header {
+            position: relative;
+            padding: 25px 20px 15px;
+            z-index: 2;
         }
-        
-        header p {
-            font-size: 14px;
-            color: var(--text-secondary);
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
-        
-        #map {
-            height: 280px;
-            margin: 15px;
-            border-radius: 20px;
-            z-index: 1;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border: 2px solid var(--card);
-        }
-        
-        .content {
-            padding: 0 15px;
-            flex: 1;
-        }
-        
-        .status-card {
-            background: var(--card);
-            padding: 15px 20px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            border-left: 4px solid var(--accent);
+
+        .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
-        
-        .status-icon {
+
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: var(--gradient);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: var(--shadow-sm);
+            transform: rotate(-5deg);
+            transition: transform 0.3s;
+        }
+
+        .logo-icon:hover {
+            transform: rotate(0deg);
+        }
+
+        .logo-text h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+
+        .logo-text p {
+            font-size: 12px;
+            color: var(--gray);
+            letter-spacing: 0.5px;
+        }
+
+        .rating {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 8px 15px;
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+
+        .rating i {
+            color: var(--warning);
+        }
+
+        .header h2 {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin: 5px 0 0;
+        }
+
+        .header h2 span {
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: block;
+        }
+
+        /* Map */
+        .map-section {
+            position: relative;
+            padding: 0 20px;
+            z-index: 2;
+        }
+
+        #map {
+            height: 240px;
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            border: 2px solid var(--card-border);
+            z-index: 1;
+        }
+
+        .map-overlay {
+            position: absolute;
+            bottom: 15px;
+            left: 35px;
+            right: 35px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 12px 18px;
+            border-radius: 50px;
+            border: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .map-overlay-icon {
             width: 40px;
             height: 40px;
+            background: var(--gradient);
             border-radius: 50%;
-            background: rgba(241, 196, 15, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .map-overlay-text {
+            flex: 1;
+        }
+
+        .map-overlay-text strong {
+            display: block;
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        .map-overlay-text span {
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        .map-overlay-status {
+            width: 10px;
+            height: 10px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 0 3px rgba(6, 214, 160, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(6, 214, 160, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(6, 214, 160, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(6, 214, 160, 0); }
+        }
+
+        /* Content */
+        .content {
+            flex: 1;
+            padding: 20px 20px 10px;
+            z-index: 2;
+            position: relative;
+        }
+
+        /* Address Cards */
+        .address-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            border-radius: 25px;
+            padding: 18px;
+            margin-bottom: 15px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .address-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .address-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .address-icon {
+            width: 45px;
+            height: 45px;
+            background: rgba(67, 97, 238, 0.1);
+            border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
+            color: var(--primary-light);
         }
-        
-        .status-text {
-            font-size: 14px;
-            color: var(--text-secondary);
+
+        .address-title {
             flex: 1;
         }
-        
-        .status-text strong {
-            color: var(--accent);
+
+        .address-title strong {
             display: block;
+            font-size: 14px;
+            color: var(--gray);
+            margin-bottom: 3px;
+        }
+
+        .address-title span {
             font-size: 16px;
-            margin-bottom: 4px;
-        }
-        
-        .input-group {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #2a2f42;
-        }
-        
-        .input-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
             font-weight: 600;
-            color: var(--accent);
         }
-        
-        .input-label i {
-            font-size: 18px;
+
+        .address-change {
+            color: var(--primary-light);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: rgba(67, 97, 238, 0.1);
+            transition: background 0.3s;
         }
-        
-        select, input {
+
+        .address-change:hover {
+            background: rgba(67, 97, 238, 0.2);
+        }
+
+        /* Destination Selector */
+        .destination-selector {
+            position: relative;
+        }
+
+        .destination-selector select, 
+        .destination-selector input {
             width: 100%;
-            padding: 16px;
-            background: #232838;
-            border: 2px solid #2f354a;
-            border-radius: 15px;
-            color: white;
-            box-sizing: border-box;
+            padding: 16px 18px;
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 20px;
+            color: var(--light);
             font-size: 16px;
+            outline: none;
             transition: all 0.3s;
+            cursor: pointer;
             appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23f1c40f'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+        }
+
+        .destination-selector select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234365f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 16px center;
+            background-position: right 15px center;
             background-size: 20px;
         }
-        
-        select:hover, input:hover {
-            border-color: var(--accent);
-            background: #2a3045;
+
+        .destination-selector select:focus,
+        .destination-selector input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
         }
-        
-        select:focus, input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.2);
+
+        .destination-selector select option {
+            background: var(--dark);
+            color: var(--light);
+            padding: 12px;
         }
-        
+
         #custom_destination {
-            margin-top: 12px;
+            margin-top: 10px;
+            display: none;
             background-image: none;
         }
-        
-        .price-estimate {
-            background: linear-gradient(135deg, #2a2f42 0%, #1e2335 100%);
-            padding: 20px;
-            border-radius: 20px;
-            margin-bottom: 20px;
+
+        /* Quick Destinations */
+        .quick-destinations {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .quick-dest-item {
+            flex: 1;
+            min-width: 80px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 12px 5px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .quick-dest-item i {
+            font-size: 20px;
+            color: var(--primary-light);
+        }
+
+        .quick-dest-item:hover {
+            background: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .quick-dest-item:hover i {
+            color: white;
+        }
+
+        .quick-dest-item.active {
+            background: var(--gradient);
+            border-color: transparent;
+        }
+
+        .quick-dest-item.active i {
+            color: white;
+        }
+
+        /* Price Card */
+        .price-card {
+            background: var(--gradient);
+            border-radius: 30px;
+            padding: 22px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .price-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: rotate(25deg);
+        }
+
+        .price-card::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+        }
+
+        .price-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .price-value {
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1;
+            margin: 5px 0 0;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+        }
+
+        .price-value small {
+            font-size: 16px;
+            font-weight: 400;
+            opacity: 0.8;
+        }
+
+        .price-detail {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            z-index: 1;
+            font-size: 13px;
         }
-        
-        .price-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-secondary);
-        }
-        
-        .price-value {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--accent);
-        }
-        
-        .price-unit {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-left: 4px;
-        }
-        
-        .promo-section {
-            background: var(--card);
-            padding: 15px 20px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            border: 1px dashed var(--accent);
+
+        /* Promo Section */
+        .promo-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px dashed var(--primary-light);
+            border-radius: 25px;
+            padding: 15px 18px;
+            margin: 15px 0;
             cursor: pointer;
             transition: all 0.3s;
         }
-        
-        .promo-section:hover {
-            background: #252b40;
+
+        .promo-card:hover {
+            background: rgba(67, 97, 238, 0.1);
         }
-        
+
         .promo-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-        
+
         .promo-title {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             font-weight: 600;
         }
-        
+
+        .promo-title i {
+            color: var(--warning);
+        }
+
+        .promo-arrow {
+            color: var(--primary-light);
+            transition: transform 0.3s;
+        }
+
         .promo-input {
             display: none;
             margin-top: 15px;
+            animation: slideDown 0.3s ease;
         }
-        
+
         .promo-input.active {
             display: block;
         }
-        
-        .apply-promo {
-            background: var(--accent);
-            color: #000;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            margin-top: 10px;
+
+        .promo-input input {
             width: 100%;
-            cursor: pointer;
+            padding: 15px;
+            background: var(--dark);
+            border: 2px solid var(--card-border);
+            border-radius: 18px;
+            color: var(--light);
+            font-size: 15px;
+            margin-bottom: 10px;
         }
-        
+
+        .apply-promo {
+            width: 100%;
+            padding: 15px;
+            background: var(--gradient);
+            border: none;
+            border-radius: 18px;
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .apply-promo:hover {
+            transform: translateY(-2px);
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Bottom Button */
+        .bottom-section {
+            padding: 15px 20px 25px;
+            z-index: 2;
+            position: relative;
+        }
+
         .btn-order {
             width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, var(--accent), #f39c12);
-            color: #000;
+            padding: 20px;
+            background: var(--gradient);
             border: none;
             border-radius: 50px;
+            color: white;
             font-size: 20px;
             font-weight: 800;
             cursor: pointer;
             transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            box-shadow: 0 10px 20px rgba(241, 196, 15, 0.2);
-            margin-bottom: 15px;
-        }
-        
-        .btn-order:not(:disabled):hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(241, 196, 15, 0.3);
-        }
-        
-        .btn-order:disabled {
-            background: #2f354a;
-            color: #5a6075;
-            box-shadow: none;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        
-        .btn-order.loading {
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             position: relative;
+            overflow: hidden;
+        }
+
+        .btn-order::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-order:hover::before {
+            left: 100%;
+        }
+
+        .btn-order:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--gray);
+        }
+
+        .btn-order.loading {
             color: transparent;
         }
-        
+
         .btn-order.loading::after {
-            content: "";
+            content: '';
             position: absolute;
             width: 24px;
             height: 24px;
@@ -283,130 +597,233 @@
             left: 50%;
             margin-left: -12px;
             margin-top: -12px;
-            border: 3px solid #000;
+            border: 3px solid white;
             border-radius: 50%;
             border-top-color: transparent;
             animation: spin 0.8s linear infinite;
         }
-        
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        
-        .error-message {
-            background: rgba(231, 76, 60, 0.1);
-            color: var(--error);
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            border-left: 4px solid var(--error);
+
+        /* Messages */
+        .message {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 20px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            color: var(--light);
+            font-weight: 500;
+            z-index: 1000;
             display: none;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow);
         }
-        
-        .error-message.show {
-            display: block;
+
+        .message.show {
+            display: flex;
+            animation: slideDown 0.3s ease;
         }
-        
-        .success-message {
-            background: rgba(46, 204, 113, 0.1);
-            color: var(--success);
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 15px;
+
+        .message.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .message.success {
             border-left: 4px solid var(--success);
-            display: none;
         }
-        
-        .success-message.show {
-            display: block;
+
+        .message i {
+            font-size: 22px;
         }
-        
+
+        .message.error i {
+            color: var(--danger);
+        }
+
+        .message.success i {
+            color: var(--success);
+        }
+
+        /* Footer */
         .footer {
-            padding: 15px;
             text-align: center;
-            color: var(--text-secondary);
+            padding: 15px;
+            color: var(--gray);
             font-size: 12px;
+            z-index: 2;
+        }
+
+        /* Loading Skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, var(--card-bg) 25%, rgba(255, 255, 255, 0.05) 50%, var(--card-bg) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Responsive */
+        @media (max-width: 380px) {
+            .quick-dest-item {
+                min-width: 70px;
+                font-size: 11px;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>⚡ TEZKOR TAKSI</h1>
-        <p>Xavfsiz va tez yetib oling</p>
-    </header>
-    
-    <div id="map"></div>
-    
-    <div class="content">
-        <div class="status-card" id="status_card">
-            <div class="status-icon" id="status_icon">📍</div>
-            <div class="status-text" id="status_text">
+    <!-- Messages -->
+    <div class="message" id="error_message">
+        <i>⚠️</i>
+        <span id="error_text"></span>
+    </div>
+    <div class="message" id="success_message">
+        <i>✅</i>
+        <span id="success_text"></span>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-top">
+            <div class="logo">
+                <div class="logo-icon">🚖</div>
+                <div class="logo-text">
+                    <h1>TEZKOR TAKSI</h1>
+                    <p>⭐ 4.9 • 10K+ haydovchilar</p>
+                </div>
+            </div>
+            <div class="rating">
+                <i>⭐</i>
+                <span>4.9</span>
+            </div>
+        </div>
+        <h2>
+            Qayerga<br>
+            <span>bormoqchisiz?</span>
+        </h2>
+    </div>
+
+    <!-- Map Section -->
+    <div class="map-section">
+        <div id="map"></div>
+        <div class="map-overlay" id="status_card">
+            <div class="map-overlay-icon" id="status_icon">📍</div>
+            <div class="map-overlay-text" id="status_text">
                 <strong>Lokatsiya aniqlanmoqda...</strong>
                 <span id="status_detail">Iltimos, GPS signalini kuting</span>
             </div>
+            <div class="map-overlay-status" id="status_indicator"></div>
         </div>
-        
-        <div class="error-message" id="error_message"></div>
-        <div class="success-message" id="success_message"></div>
-        
-        <div class="input-group">
-            <div class="input-label">
-                <i>📍</i>
-                <span>Qayerdan</span>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <!-- From Address -->
+        <div class="address-card">
+            <div class="address-header">
+                <div class="address-icon">📍</div>
+                <div class="address-title">
+                    <strong>Qayerdan</strong>
+                    <span id="from_address">Aniqlanmoqda...</span>
+                </div>
+                <div class="address-change" onclick="refreshLocation()">🔄 Yangilash</div>
             </div>
-            <input type="text" id="from_address" readonly placeholder="Avtomatik aniqlanadi..." value="Aniqlanmoqda...">
         </div>
-        
-        <div class="input-group">
-            <div class="input-label">
-                <i>🏁</i>
-                <span>Qayerga</span>
+
+        <!-- To Address -->
+        <div class="address-card">
+            <div class="address-header">
+                <div class="address-icon">🏁</div>
+                <div class="address-title">
+                    <strong>Qayerga</strong>
+                    <span id="to_address_preview">Tanlang...</span>
+                </div>
             </div>
-            <select id="destination_select" onchange="toggleDestination()">
-                <option value="">Tanlang...</option>
-                <option value="Haydovchiga aytaman">🚖 Haydovchiga aytaman</option>
-                <option value="Xonqiz">🏘 Xonqiz</option>
-                <option value="Chimyon">🏔 Chimyon</option>
-                <option value="Mindon">🏡 Mindon</option>
-                <option value="WRITE_OWN">✍️ O'zim yozaman</option>
-            </select>
-            <input type="text" id="custom_destination" style="display:none;" placeholder="Manzilni to'liq kiriting...">
+            
+            <div class="destination-selector">
+                <select id="destination_select" onchange="handleDestinationChange()">
+                    <option value="" disabled selected>Manzilni tanlang</option>
+                    <option value="Haydovchiga aytaman">🚖 Haydovchiga aytaman</option>
+                    <option value="Xonqiz">🏘 Xonqiz qishlog'i</option>
+                    <option value="Chimyon">⛰ Chimyon tog'lari</option>
+                    <option value="Mindon">🏡 Mindon MFY</option>
+                    <option value="WRITE_OWN">✍️ Boshqa manzil</option>
+                </select>
+                <input type="text" id="custom_destination" placeholder="Manzilni to'liq kiriting...">
+            </div>
+
+            <!-- Quick Destinations -->
+            <div class="quick-destinations" id="quick_destinations">
+                <div class="quick-dest-item" onclick="quickDestination('Xonqiz')">
+                    <i>🏘</i>
+                    <span>Xonqiz</span>
+                </div>
+                <div class="quick-dest-item" onclick="quickDestination('Chimyon')">
+                    <i>⛰</i>
+                    <span>Chimyon</span>
+                </div>
+                <div class="quick-dest-item" onclick="quickDestination('Mindon')">
+                    <i>🏡</i>
+                    <span>Mindon</span>
+                </div>
+                <div class="quick-dest-item" onclick="quickDestination('Haydovchiga aytaman')">
+                    <i>🚖</i>
+                    <span>Haydovchiga</span>
+                </div>
+            </div>
         </div>
-        
-        <div class="price-estimate" id="price_section" style="display: none;">
+
+        <!-- Price Estimate -->
+        <div class="price-card" id="price_section" style="display: none;">
             <div class="price-label">
                 <i>💰</i>
-                <span>Taxminiy narx:</span>
+                <span>Taxminiy narx</span>
             </div>
-            <div>
-                <span class="price-value" id="estimated_price">4,000</span>
-                <span class="price-unit">so'm</span>
+            <div class="price-value">
+                <span id="estimated_price">4,000</span>
+                <small>so'm</small>
+            </div>
+            <div class="price-detail">
+                <span>Asosiy: 4,000 so'm</span>
+                <span>Masofa: <span id="distance_text">3.0 km</span></span>
             </div>
         </div>
-        
-        <div class="promo-section" id="promo_section">
-            <div class="promo-header" onclick="togglePromo()">
+
+        <!-- Promo Code -->
+        <div class="promo-card" id="promo_section" onclick="togglePromo()">
+            <div class="promo-header">
                 <div class="promo-title">
                     <i>🎫</i>
                     <span>Promokod</span>
                 </div>
-                <span style="color: var(--accent);">▼</span>
+                <span class="promo-arrow" id="promo_arrow">▼</span>
             </div>
-            <div class="promo-input" id="promo_input">
+            <div class="promo-input" id="promo_input" onclick="event.stopPropagation()">
                 <input type="text" id="promo_code" placeholder="Promokodni kiriting...">
                 <button class="apply-promo" onclick="applyPromo()">Tekshirish</button>
             </div>
         </div>
     </div>
-    
-    <div style="margin-top: auto;">
-        <div style="padding: 0 20px;">
-            <button id="send_btn" class="btn-order" disabled onclick="sendOrder()">
-                🚖 BUYURTMA BERISH
-            </button>
-        </div>
+
+    <!-- Bottom Section -->
+    <div class="bottom-section">
+        <button id="send_btn" class="btn-order" disabled onclick="sendOrder()">
+            <span>🚖</span>
+            BUYURTMA BERISH
+        </button>
         <div class="footer">
-            © 2025 Tezkor Taksi | Xavfsiz va tez xizmat
+            © 2025 Tezkor Taksi • Xavfsiz va tez xizmat
         </div>
     </div>
 
@@ -414,12 +831,8 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
-        
-        // Telegram ranglarini qo'llash
-        if (tg.colorScheme === 'dark') {
-            document.documentElement.style.setProperty('--bg', '#0a0f1e');
-            document.documentElement.style.setProperty('--card', '#1a1f30');
-        }
+        tg.setHeaderColor('#0b132b');
+        tg.setBackgroundColor('#0b132b');
 
         let userLat = null;
         let userLon = null;
@@ -428,34 +841,84 @@
         let currentDiscount = 0;
         let appliedPromo = null;
         
-        // Boshlang'ich qiymatlar
         const BASE_PRICE = 4000;
         const PRICE_PER_KM = 1500;
-        
-        function toggleDestination() {
+
+        // Distances map
+        const distances = {
+            "Xonqiz": 5.2,
+            "Chimyon": 8.7,
+            "Mindon": 3.5,
+            "Haydovchiga aytaman": 3.0
+        };
+
+        // Quick destination
+        function quickDestination(dest) {
+            const select = document.getElementById('destination_select');
+            const custom = document.getElementById('custom_destination');
+            
+            // Find and set select option
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === dest) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            custom.style.display = "none";
+            custom.value = "";
+            updateToAddressPreview(dest);
+            updatePriceEstimate();
+            
+            // Highlight active
+            document.querySelectorAll('.quick-dest-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.innerText.includes(dest)) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        function handleDestinationChange() {
             const select = document.getElementById('destination_select');
             const custom = document.getElementById('custom_destination');
             
             if (select.value === "WRITE_OWN") {
                 custom.style.display = "block";
                 custom.focus();
-                updatePriceEstimate();
+                updateToAddressPreview("Manzil kiritish...");
             } else if (select.value) {
                 custom.style.display = "none";
                 custom.value = "";
+                updateToAddressPreview(select.value);
                 updatePriceEstimate();
+                
+                // Update quick destinations highlight
+                document.querySelectorAll('.quick-dest-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.innerText.includes(select.value)) {
+                        item.classList.add('active');
+                    }
+                });
             } else {
                 custom.style.display = "none";
                 custom.value = "";
+                document.getElementById('to_address_preview').innerText = "Tanlang...";
                 hidePriceSection();
             }
         }
-        
+
+        function updateToAddressPreview(value) {
+            document.getElementById('to_address_preview').innerText = value;
+        }
+
         function togglePromo() {
             const promoInput = document.getElementById('promo_input');
+            const arrow = document.getElementById('promo_arrow');
             promoInput.classList.toggle('active');
+            arrow.style.transform = promoInput.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0)';
         }
-        
+
         function updatePriceEstimate() {
             const destination = getDestination();
             if (!destination || destination === "Tanlang..." || !userLat || !userLon) {
@@ -463,37 +926,28 @@
                 return;
             }
             
-            // Turli manzillar uchun taxminiy masofalar
-            const distances = {
-                "Xonqiz": 5.2,
-                "Chimyon": 8.7,
-                "Mindon": 3.5,
-                "Haydovchiga aytaman": 3.0
-            };
-            
             let distance = distances[destination] || 3.0;
             let price = calculatePrice(distance);
             
             document.getElementById('estimated_price').textContent = price.toLocaleString();
-            document.getElementById('price_section').style.display = 'flex';
+            document.getElementById('distance_text').innerText = distance.toFixed(1) + ' km';
+            document.getElementById('price_section').style.display = 'block';
         }
-        
+
         function calculatePrice(distance) {
             let price = BASE_PRICE + (distance * PRICE_PER_KM);
             
-            // Promokod chegirmasi
             if (currentDiscount > 0) {
                 price = price * (100 - currentDiscount) / 100;
             }
             
-            // 100 so'mga yaxlitlash
             return Math.round(price / 100) * 100;
         }
-        
+
         function hidePriceSection() {
             document.getElementById('price_section').style.display = 'none';
         }
-        
+
         function getDestination() {
             const select = document.getElementById('destination_select');
             if (select.value === "WRITE_OWN") {
@@ -501,25 +955,25 @@
             }
             return select.value;
         }
-        
+
         function showError(message) {
             const errorDiv = document.getElementById('error_message');
-            errorDiv.textContent = message;
+            document.getElementById('error_text').textContent = message;
             errorDiv.classList.add('show');
             setTimeout(() => {
                 errorDiv.classList.remove('show');
-            }, 5000);
+            }, 4000);
         }
-        
+
         function showSuccess(message) {
             const successDiv = document.getElementById('success_message');
-            successDiv.textContent = message;
+            document.getElementById('success_text').textContent = message;
             successDiv.classList.add('show');
             setTimeout(() => {
                 successDiv.classList.remove('show');
             }, 3000);
         }
-        
+
         function applyPromo() {
             const promoCode = document.getElementById('promo_code').value.toUpperCase().trim();
             
@@ -528,7 +982,6 @@
                 return;
             }
             
-            // Promokodlarni tekshirish (misol uchun)
             const validPromos = {
                 "WELCOME10": 10,
                 "TAKSI20": 20,
@@ -539,22 +992,22 @@
             if (validPromos[promoCode]) {
                 currentDiscount = validPromos[promoCode];
                 appliedPromo = promoCode;
-                document.getElementById('promo_code').style.borderColor = '#2ecc71';
+                document.getElementById('promo_code').style.borderColor = '#06d6a0';
                 showSuccess(`✅ ${currentDiscount}% chegirma qo'llandi!`);
                 updatePriceEstimate();
                 
-                // Promo kodni yashirish
                 setTimeout(() => {
                     document.getElementById('promo_input').classList.remove('active');
+                    document.getElementById('promo_arrow').style.transform = 'rotate(0)';
                 }, 1500);
             } else {
-                document.getElementById('promo_code').style.borderColor = '#e74c3c';
+                document.getElementById('promo_code').style.borderColor = '#ef476f';
                 showError("❌ Noto'g'ri promokod!");
                 currentDiscount = 0;
                 appliedPromo = null;
             }
         }
-        
+
         function setLoading(btn, isLoading) {
             if (isLoading) {
                 btn.classList.add('loading');
@@ -564,14 +1017,18 @@
                 btn.disabled = false;
             }
         }
-        
+
+        function refreshLocation() {
+            showSuccess("📍 Lokatsiya yangilanmoqda...");
+            window.location.reload();
+        }
+
         // GPS aniqlash
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 userLat = pos.coords.latitude;
                 userLon = pos.coords.longitude;
                 
-                // Xaritani yangilash
                 if (!map) {
                     map = L.map('map', {
                         zoomControl: false,
@@ -585,14 +1042,20 @@
                     map.setView([userLat, userLon], 16);
                 }
                 
-                // Markerni yangilash
                 if (marker) {
                     marker.setLatLng([userLat, userLon]);
                 } else {
                     marker = L.marker([userLat, userLon]).addTo(map);
+                    
+                    // Add circle
+                    L.circle([userLat, userLon], {
+                        color: '#4361ee',
+                        fillColor: '#4361ee',
+                        fillOpacity: 0.2,
+                        radius: 50
+                    }).addTo(map);
                 }
 
-                // Manzilni matnga aylantirish
                 try {
                     document.getElementById('status_detail').innerHTML = "Manzil aniqlanmoqda...";
                     
@@ -601,20 +1064,21 @@
                     
                     if (data.display_name) {
                         addressName = data.display_name.split(',').slice(0, 3).join(',');
-                        document.getElementById('from_address').value = addressName;
+                        document.getElementById('from_address').innerHTML = addressName;
                         
                         document.getElementById('status_icon').innerHTML = "✅";
                         document.getElementById('status_text').innerHTML = 
                             '<strong>Manzil aniqlandi</strong>' +
-                            '<span>' + addressName.substring(0, 50) + '...</span>';
+                            '<span>' + addressName.substring(0, 40) + '...</span>';
                     }
                     
                     document.getElementById('send_btn').disabled = false;
                     document.getElementById('status_detail').innerHTML = "Buyurtma berish mumkin";
+                    document.getElementById('status_indicator').style.background = '#06d6a0';
                     
                 } catch (e) {
                     addressName = "Koordinata: " + userLat.toFixed(5) + ", " + userLon.toFixed(5);
-                    document.getElementById('from_address').value = addressName;
+                    document.getElementById('from_address').innerHTML = addressName;
                     
                     document.getElementById('status_icon').innerHTML = "⚠️";
                     document.getElementById('status_text').innerHTML = 
@@ -624,7 +1088,6 @@
                     document.getElementById('send_btn').disabled = false;
                 }
                 
-                // Narxni yangilash
                 updatePriceEstimate();
                 
             }, (err) => {
@@ -642,34 +1105,29 @@
                     '<strong>Lokatsiya aniqlanmadi</strong>' +
                     '<span>' + errorMessage + '</span>';
                 
-                document.getElementById('from_address').value = "Aniqlanmadi";
+                document.getElementById('from_address').innerHTML = "Aniqlanmadi";
+                document.getElementById('status_indicator').style.background = '#ef476f';
                 showError("Iltimos, GPS ni yoqing va qaytadan urining");
-                
-                // 3 soniyadan keyin qayta urinish
-                setTimeout(() => {
-                    window.location.reload();
-                }, 3000);
             });
         } else {
             document.getElementById('status_icon').innerHTML = "❌";
             document.getElementById('status_text').innerHTML = 
                 '<strong>Xatolik</strong>' +
-                '<span>Sizning brauzeringiz GPS ni qo\'llab-quvvatlamaydi</span>';
+                '<span>Brauzeringiz GPS ni qo\'llab-quvvatlamaydi</span>';
         }
-        
+
         // Buyurtma berish
         async function sendOrder() {
             const btn = document.getElementById('send_btn');
             
-            // Tekshirish
             if (!userLat || !userLon) {
-                showError("Lokatsiya aniqlanmadi. Iltimos, qaytadan urining.");
+                showError("Lokatsiya aniqlanmadi!");
                 return;
             }
             
             let toAddr = getDestination();
             if (!toAddr || toAddr === "Tanlang...") {
-                showError("Iltimos, boradigan joyingizni tanlang!");
+                showError("Boradigan joyingizni tanlang!");
                 document.getElementById('destination_select').focus();
                 return;
             }
@@ -677,13 +1135,12 @@
             if (toAddr === "WRITE_OWN") {
                 toAddr = document.getElementById('custom_destination').value;
                 if (!toAddr.trim()) {
-                    showError("Iltimos, manzilni kiriting!");
+                    showError("Manzilni kiriting!");
                     document.getElementById('custom_destination').focus();
                     return;
                 }
             }
             
-            // Yuborish
             setLoading(btn, true);
             
             try {
@@ -692,31 +1149,27 @@
                     lon: parseFloat(userLon),
                     from: String(addressName),
                     to: String(toAddr),
-                    distance: document.getElementById('destination_select').value === "Xonqiz" ? 5.2 :
-                             document.getElementById('destination_select').value === "Chimyon" ? 8.7 :
-                             document.getElementById('destination_select').value === "Mindon" ? 3.5 : 3.0,
-                    duration: 15, // Taxminiy vaqt
+                    address: String(addressName), // To'liq manzil nomi
+                    distance: distances[document.getElementById('destination_select').value] || 3.0,
+                    duration: 15,
                     promo: appliedPromo || ""
                 };
 
-                // Telegramga yuborish
                 tg.sendData(JSON.stringify(orderData));
-                
-                // Muvaffaqiyatli yuborildi
                 showSuccess("✅ Buyurtma yuborildi!");
                 
                 setTimeout(() => {
                     tg.close();
-                }, 500);
+                }, 1000);
                 
             } catch (e) {
                 setLoading(btn, false);
-                showError("Xatolik yuz berdi. Qaytadan urining.");
+                showError("Xatolik yuz berdi!");
                 console.error(e);
             }
         }
-        
-        // Enter tugmasi bilan yuborish
+
+        // Enter tugmasi
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 const btn = document.getElementById('send_btn');
@@ -725,11 +1178,14 @@
                 }
             }
         });
-        
-        // Destination tanlanganda narxni yangilash
-        document.getElementById('destination_select').addEventListener('change', updatePriceEstimate);
-        document.getElementById('custom_destination').addEventListener('input', updatePriceEstimate);
-        
+
+        // Event listeners
+        document.getElementById('destination_select').addEventListener('change', handleDestinationChange);
+        document.getElementById('custom_destination').addEventListener('input', () => {
+            updateToAddressPreview(document.getElementById('custom_destination').value);
+            updatePriceEstimate();
+        });
+
         // Telegram Main Button
         tg.MainButton.setText("BUYURTMA BERISH").hide();
     </script>

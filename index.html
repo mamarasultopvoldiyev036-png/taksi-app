@@ -22,6 +22,7 @@
             background-color: var(--bg); 
             color: var(--text);
             display: flex; justify-content: center;
+            overflow-x: hidden;
         }
 
         .app-container {
@@ -39,13 +40,13 @@
         }
 
         header h1 {
-            margin: 0; font-size: 24px; color: var(--accent);
+            margin: 0; font-size: 22px; color: var(--accent);
             text-transform: uppercase; letter-spacing: 2px;
             font-weight: 900;
         }
 
         #map {
-            height: 200px; width: calc(100% - 30px);
+            height: 250px; width: calc(100% - 30px);
             margin: 15px; border-radius: 15px;
             border: 1px solid #333;
             z-index: 1;
@@ -104,7 +105,7 @@
         }
 
         .btn-order:active { transform: scale(0.97); }
-        .btn-order:disabled { background: #444; color: #777; box-shadow: none; }
+        .btn-order:disabled { background: #444; color: #777; box-shadow: none; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -124,14 +125,14 @@
         <div class="input-group">
             <label>Qayerga borasiz? <span class="optional">(majburiy emas)</span></label>
             <select id="destination_select" onchange="toggleOwn()">
-                <option value="Boshqa">Boshqa</option>
+                <option value="Boshqa">Boshqa (Haydovchiga aytaman)</option>
                 <option value="Xonqiz">Xonqiz</option>
                 <option value="Chimyon">Chimyon</option>
                 <option value="Mindon">Mindon</option>
                 <option value="Konchilar">Konchilar</option>
                 <option value="Qo'rg'ontepa">Qo'rg'ontepa</option>
                 <option value="Langar">Langar</option>
-                <option value="WRITE_OWN">Boshqa (o'zingiz kiriting)</option>
+                <option value="WRITE_OWN">✍️ Manzilni yozish</option>
             </select>
             <input type="text" id="custom_destination" placeholder="Manzilni shu yerga yozing...">
         </div>
@@ -164,14 +165,17 @@
     function initMap(lat, lon) {
         if (!map) {
             map = L.map('map', {zoomControl: false}).setView([lat, lon], 17);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            marker = L.marker([lat, lon]).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OSM'
+            }).addTo(map);
+            marker = L.marker([lat, lon], {draggable: false}).addTo(map);
         } else {
             map.setView([lat, lon], 17);
             marker.setLatLng([lat, lon]);
         }
     }
 
+    // Lokatsiyani olish
     window.onload = function() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -187,55 +191,59 @@
                     const a = data.address;
                     let p = [];
 
-                    // 1. KO'CHA VA UY RAQAMI (Eng muhimi)
                     if (a.road) {
                         let street = a.road;
-                        if (a.house_number) street += ", " + a.house_number + "-uy";
+                        if (a.house_number) street += ", " + a.house_number;
                         p.push(street);
                     }
-
-                    // 2. BINO NOMLARI (Maktab, Do'kon, Kafe va h.k.)
-                    if (a.amenity || a.building || a.school || a.shop || a.office) {
-                        p.push(a.amenity || a.building || a.school || a.shop || a.office);
+                    if (a.amenity || a.building || a.shop) {
+                        p.push(a.amenity || a.building || a.shop);
                     }
-
-                    // 3. HUDUD NOMLARI (Qishloq, Mahalla, Tuman)
-                    if (a.village || a.suburb || a.hamlet || a.neighbourhood || a.residential) {
-                        p.push(a.village || a.suburb || a.hamlet || a.neighbourhood || a.residential);
-                    }
-
-                    // 4. SHAHAR YOKI TUMAN
-                    if (p.length < 2) {
-                        if (a.city || a.town || a.county) p.push(a.city || a.town || a.county);
+                    if (a.village || a.suburb || a.neighbourhood) {
+                        p.push(a.village || a.suburb || a.neighbourhood);
                     }
 
                     addressName = p.length > 0 ? p.join(", ") : "Aniq manzil topilmadi";
                     document.getElementById('status').innerHTML = "✅ <b>Manzil:</b> " + addressName;
                     document.getElementById('send_btn').disabled = false;
                 } catch (e) {
-                    addressName = "GPS: " + userLat.toFixed(5) + ", " + userLon.toFixed(5);
+                    addressName = `GPS: ${userLat.toFixed(5)}, ${userLon.toFixed(5)}`;
                     document.getElementById('status').innerText = "✅ Koordinata aniqlandi";
                     document.getElementById('send_btn').disabled = false;
                 }
             }, (err) => {
-                document.getElementById('status').innerText = "❌ GPS ruxsati berilmadi";
+                document.getElementById('status').innerText = "❌ GPS ruxsati berilmadi. Iltimos, joylashuvni yoqing.";
             }, {enableHighAccuracy: true});
+        } else {
+            document.getElementById('status').innerText = "❌ Brauzer GPS-ni qo'llab-quvvatlamaydi";
         }
     };
 
+    // Buyurtma yuborish
     document.getElementById('send_btn').onclick = function() {
         let toAddr = document.getElementById('destination_select').value;
         if(toAddr === "WRITE_OWN") {
             toAddr = document.getElementById('custom_destination').value || "Kiritilmadi";
         }
         
-        tg.sendData(JSON.stringify({
-            lat: userLat, 
-            lon: userLon, 
-            from: addressName, 
+        // MA'LUMOTNI TAYYORLASH
+        const orderData = {
+            lat: userLat,
+            lon: userLon,
+            from: addressName,
             to: toAddr
-        }));
-        setTimeout(() => tg.close(), 100);
+        };
+
+        // BOTGA YUBORISH (JSON STRING)
+        try {
+            tg.sendData(JSON.stringify(orderData));
+            // Bir oz kutib yopish (ma'lumot ketishi uchun)
+            setTimeout(() => {
+                tg.close();
+            }, 150);
+        } catch (error) {
+            alert("Telegramga yuborishda xato: " + error);
+        }
     };
 </script>
 </body>

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tezkor Taksi</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         * {
             margin: 0;
@@ -58,10 +60,20 @@
             opacity: 0.9;
         }
         
+        /* Map */
+        #map {
+            height: 250px;
+            margin: 15px 15px 0 15px;
+            border-radius: 20px;
+            z-index: 1;
+            box-shadow: var(--shadow);
+            border: 3px solid white;
+        }
+        
         /* Location Card */
         .location-card {
             background: var(--card);
-            margin: -20px 20px 20px 20px;
+            margin: -15px 20px 20px 20px;
             padding: 20px;
             border-radius: 20px;
             box-shadow: var(--shadow);
@@ -124,24 +136,26 @@
         /* Status Card */
         .status-card {
             background: var(--card);
-            padding: 20px;
-            border-radius: 20px;
+            padding: 15px 20px;
+            border-radius: 15px;
             margin-bottom: 20px;
             box-shadow: var(--shadow);
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
+            border-left: 4px solid var(--primary);
         }
         
         .status-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 25px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             background: rgba(0, 136, 204, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 20px;
+            color: var(--primary);
         }
         
         .status-info {
@@ -178,10 +192,6 @@
             color: var(--primary);
         }
         
-        .input-label i {
-            font-size: 18px;
-        }
-        
         select, input, textarea {
             width: 100%;
             padding: 16px;
@@ -191,6 +201,7 @@
             font-size: 16px;
             transition: all 0.3s;
             font-family: inherit;
+            margin-bottom: 10px;
         }
         
         select {
@@ -228,10 +239,12 @@
             margin-left: 10px;
         }
         
+        /* Destination Options */
         .destination-options {
             display: flex;
             flex-direction: column;
             gap: 10px;
+            margin-bottom: 15px;
         }
         
         .destination-option {
@@ -273,7 +286,6 @@
         }
         
         .custom-input {
-            margin-top: 15px;
             display: none;
         }
         
@@ -281,6 +293,7 @@
             display: block;
         }
         
+        /* Skip Option */
         .skip-option {
             text-align: center;
             padding: 15px;
@@ -288,11 +301,43 @@
             font-size: 14px;
             cursor: pointer;
             border-top: 1px dashed #ddd;
-            margin-top: 15px;
+            margin-top: 10px;
+            transition: all 0.3s;
         }
         
         .skip-option:hover {
             color: var(--primary);
+        }
+        
+        /* Price Estimate */
+        .price-estimate {
+            background: linear-gradient(135deg, #2a2f42 0%, #1e2335 100%);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+        
+        .price-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #a0a5b8;
+        }
+        
+        .price-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--secondary);
+        }
+        
+        .price-unit {
+            font-size: 14px;
+            color: #a0a5b8;
+            margin-left: 4px;
         }
         
         /* Button */
@@ -380,7 +425,7 @@
             display: flex;
         }
         
-        /* Info box */
+        /* Info Box */
         .info-box {
             background: #e3f2fd;
             padding: 15px;
@@ -420,6 +465,8 @@
         </h1>
         <p>Qishlog'ingizda tez va qulay taksi</p>
     </div>
+    
+    <div id="map"></div>
     
     <div class="location-card fade-in">
         <div class="location-header">
@@ -466,7 +513,7 @@
             </div>
             
             <div class="destination-options">
-                <div class="destination-option" onclick="selectDestination('haydovchiga')" id="opt_driver">
+                <div class="destination-option" onclick="selectDestination('haydovchiga')" id="opt_haydovchiga">
                     <div class="option-title">
                         <span>🚖</span>
                         <span>Haydovchiga aytaman</span>
@@ -516,11 +563,22 @@
             </div>
             
             <div class="custom-input" id="custom_input">
-                <textarea id="custom_destination" placeholder="Manzilni to'liq yozing... (ixtiyoriy)"></textarea>
+                <textarea id="custom_destination" placeholder="Manzilni to'liq yozing... (masalan: Xonqiz ko'chasi 15-uy)"></textarea>
             </div>
             
             <div class="skip-option" onclick="skipDestination()">
                 <span>⏭️ Bu qadamni o'tkazib yuborish</span>
+            </div>
+        </div>
+        
+        <div class="price-estimate" id="price_section">
+            <div class="price-label">
+                <span>💰</span>
+                <span>Taxminiy narx:</span>
+            </div>
+            <div>
+                <span class="price-value" id="estimated_price">4,000</span>
+                <span class="price-unit">so'm</span>
             </div>
         </div>
     </div>
@@ -544,22 +602,23 @@
         let userLon = null;
         let villageName = "Noma'lum qishloq";
         let fullAddress = "";
-        let selectedDestination = "haydovchiga"; // Standart: haydovchiga aytaman
+        let selectedDestination = "haydovchiga";
         let customDestination = "";
+        let map, marker;
+        
+        const BASE_PRICE = 4000;
+        const PRICE_PER_KM = 1500;
         
         // Manzil tanlash
         function selectDestination(type) {
             selectedDestination = type;
             
-            // Barcha optionlardan selected class ni olib tashlash
             document.querySelectorAll('.destination-option').forEach(opt => {
                 opt.classList.remove('selected');
             });
             
-            // Tanlangan optionni belgilash
             document.getElementById(`opt_${type}`).classList.add('selected');
             
-            // Custom inputni ko'rsatish/yashirish
             const customInput = document.getElementById('custom_input');
             if (type === 'custom') {
                 customInput.classList.add('show');
@@ -568,21 +627,26 @@
                 customInput.classList.remove('show');
             }
             
-            console.log("Tanlangan manzil:", type);
+            updatePriceEstimate();
         }
         
-        // O'tkazib yuborish
         function skipDestination() {
-            selectedDestination = "haydovchiga";
+            selectDestination('haydovchiga');
+        }
+        
+        function updatePriceEstimate() {
+            let distance = 1.0;
             
-            document.querySelectorAll('.destination-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
+            if (selectedDestination === 'xonqiz') distance = 5.2;
+            else if (selectedDestination === 'qorgontepa') distance = 4.8;
+            else if (selectedDestination === 'chimyon') distance = 8.7;
+            else if (selectedDestination === 'mindon') distance = 3.5;
             
-            document.getElementById('opt_driver').classList.add('selected');
-            document.getElementById('custom_input').classList.remove('show');
+            let extra_km = Math.max(0, distance - 1);
+            let price = BASE_PRICE + (extra_km * PRICE_PER_KM);
+            price = Math.round(price / 100) * 100;
             
-            console.log("Manzil tanlanmadi, haydovchiga aytiladi");
+            document.getElementById('estimated_price').textContent = price.toLocaleString();
         }
         
         function showError(message) {
@@ -614,25 +678,6 @@
         // Qishloq nomini olish
         async function getVillageName(lat, lon) {
             try {
-                const villages = {
-                    "41.3,69.2": "Chirchiq shahri",
-                    "41.1,69.3": "Olmaliq shahri",
-                    "40.7,72.3": "Andijon shahri",
-                    "40.6,72.4": "Asaka qishlog'i",
-                    "40.3,71.7": "Farg'ona shahri",
-                    "41.0,71.5": "Namangan shahri",
-                    "39.6,66.9": "Samarqand shahri",
-                    "39.7,64.4": "Buxoro shahri",
-                    "41.3,61.6": "Urganch shahri",
-                    "42.4,59.4": "Nukus shahri"
-                };
-                
-                const key = lat.toFixed(1) + "," + lon.toFixed(1);
-                
-                if (villages[key]) {
-                    return villages[key];
-                }
-                
                 const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=uz`);
                 const data = await res.json();
                 
@@ -641,6 +686,7 @@
                                    data.address.town || 
                                    data.address.city || 
                                    data.address.county ||
+                                   data.address.state_district ||
                                    "Noma'lum qishloq";
                     
                     const area = data.address.state || "O'zbekiston";
@@ -674,19 +720,22 @@
                 userLat = pos.coords.latitude;
                 userLon = pos.coords.longitude;
                 
+                // Xaritani yaratish
+                map = L.map('map', {
+                    zoomControl: true,
+                    attributionControl: false
+                }).setView([userLat, userLon], 15);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                
+                marker = L.marker([userLat, userLon]).addTo(map);
+                
                 const location = await getVillageName(userLat, userLon);
                 
-                if (typeof location === 'string') {
-                    villageName = location;
-                    document.getElementById('location_name').innerText = location;
-                    document.getElementById('location_area').innerText = "O'zbekiston";
-                } else {
-                    villageName = location.name;
-                    document.getElementById('location_name').innerText = location.name;
-                    document.getElementById('location_area').innerText = location.area;
-                }
-                
-                fullAddress = location.full || villageName;
+                villageName = location.name;
+                document.getElementById('location_name').innerText = location.name;
+                document.getElementById('location_area').innerText = location.area;
+                fullAddress = location.full;
                 
                 document.getElementById('status_icon').innerHTML = "✅";
                 document.getElementById('status_title').innerHTML = "Joylashuvingiz aniqlandi";
@@ -719,13 +768,11 @@
         async function sendOrder() {
             const btn = document.getElementById('send_btn');
             
-            // Tekshirish
             if (!userLat || !userLon) {
                 showError("Joylashuvingiz aniqlanmadi!");
                 return;
             }
             
-            // Boradigan joyni aniqlash
             let toAddress = "";
             
             if (selectedDestination === "haydovchiga") {
@@ -741,7 +788,7 @@
             } else if (selectedDestination === "custom") {
                 toAddress = document.getElementById('custom_destination').value.trim();
                 if (!toAddress) {
-                    toAddress = "Haydovchiga aytaman"; // Agar bo'sh bo'lsa
+                    toAddress = "Haydovchiga aytaman";
                 }
             }
             
@@ -752,12 +799,12 @@
                     lat: userLat,
                     lon: userLon,
                     from: villageName,
-                    to: toAddress,
-                    full_address: fullAddress
+                    to: toAddress
                 };
 
                 console.log("Yuborilayotgan ma'lumot:", orderData);
                 
+                // Telegramga yuborish - BU BOTINGIZGA MOS
                 tg.sendData(JSON.stringify(orderData));
                 
                 showSuccess("✅ Buyurtma yuborildi!");
@@ -775,6 +822,7 @@
         
         // Standart tanlov
         selectDestination('haydovchiga');
+        updatePriceEstimate();
     </script>
 </body>
 </html>

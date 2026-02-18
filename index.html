@@ -14,36 +14,37 @@
         #map { height: 250px; margin: 15px; border-radius: 15px; z-index: 1; }
         .content { padding: 0 15px; }
         .input-group { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
-        select, input { width: 100%; padding: 14px; background: #2a2a2a; border: 1px solid #444; border-radius: 12px; color: white; box-sizing: border-box; margin-top: 10px; }
+        select, input { width: 100%; padding: 14px; background: #2a2a2a; border: 1px solid #444; border-radius: 12px; color: white; box-sizing: border-box; margin-top: 10px; font-size: 16px; }
         .btn-order { width: 100%; padding: 18px; background: var(--accent); color: #000; border: none; border-radius: 15px; font-size: 18px; font-weight: 800; cursor: pointer; }
-        .btn-order:disabled { background: #444; cursor: not-allowed; }
+        .btn-order:disabled { background: #444; color: #888; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <header><h1>⚡ Tezkor Taksi</h1></header>
     <div id="map"></div>
     <div class="content">
-        <div id="status" style="padding: 10px; font-size: 13px;">📍 Lokatsiya aniqlanmoqda...</div>
+        <div id="status" style="padding: 10px; font-size: 14px; color: var(--accent);">📍 Lokatsiya kutilmoqda...</div>
         <div class="input-group">
             <label>Qayerga borasiz?</label>
             <select id="destination_select" onchange="toggleOwn()">
-                <option value="Boshqa">Boshqa</option>
+                <option value="Haydovchiga aytaman">Haydovchiga aytaman</option>
                 <option value="Xonqiz">Xonqiz</option>
                 <option value="Chimyon">Chimyon</option>
                 <option value="Mindon">Mindon</option>
-                <option value="WRITE_OWN">O'zim yozaman</option>
+                <option value="WRITE_OWN">✍️ O'zim yozaman</option>
             </select>
-            <input type="text" id="custom_destination" style="display:none;" placeholder="Manzilni yozing...">
+            <input type="text" id="custom_destination" style="display:none;" placeholder="Manzilni kiriting...">
         </div>
     </div>
     <div style="margin-top: auto; padding: 20px;">
-        <button id="send_btn" class="btn-order" disabled>Buyurtma berish</button>
+        <button id="send_btn" class="btn-order" disabled>BUYURTMA BERISH</button>
     </div>
 
 <script>
     let tg = window.Telegram.WebApp;
     tg.expand();
-    let userLat, userLon, addressName = "Aniqlanmadi";
+
+    let userLat, userLon, addressName = "Noma'lum manzil";
     let map, marker;
 
     function toggleOwn() {
@@ -51,33 +52,40 @@
         custom.style.display = document.getElementById('destination_select').value === "WRITE_OWN" ? "block" : "none";
     }
 
-    window.onload = function() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                userLat = pos.coords.latitude;
-                userLon = pos.coords.longitude;
-                if (!map) {
-                    map = L.map('map', {zoomControl: false}).setView([userLat, userLon], 17);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                    marker = L.marker([userLat, userLon]).addTo(map);
-                }
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}`);
-                    const data = await res.json();
-                    addressName = data.display_name.split(',').slice(0, 3).join(',');
-                    document.getElementById('status').innerHTML = "✅ Manzil: " + addressName;
-                    document.getElementById('send_btn').disabled = false;
-                } catch {
-                    addressName = "Koordinata: " + userLat.toFixed(5);
-                    document.getElementById('send_btn').disabled = false;
-                }
-            });
-        }
-    };
+    // GPS aniqlash
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            userLat = pos.coords.latitude;
+            userLon = pos.coords.longitude;
+            
+            // Xaritani yangilash
+            map = L.map('map', {zoomControl: false}).setView([userLat, userLon], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            marker = L.marker([userLat, userLon]).addTo(map);
 
+            // Manzilni matnga aylantirish (Reverse Geocoding)
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}`);
+                const data = await res.json();
+                addressName = data.display_name.split(',').slice(0, 3).join(',');
+                document.getElementById('status').innerHTML = "✅ Manzil: " + addressName;
+                document.getElementById('send_btn').disabled = false;
+            } catch (e) {
+                addressName = "Koordinata: " + userLat.toFixed(5) + ", " + userLon.toFixed(5);
+                document.getElementById('status').innerHTML = "✅ GPS aniqlandi";
+                document.getElementById('send_btn').disabled = false;
+            }
+        }, (err) => {
+            document.getElementById('status').innerHTML = "❌ GPS o'chiq yoki ruxsat berilmadi";
+        });
+    }
+
+    // BUYURTMA TUGMASI
     document.getElementById('send_btn').onclick = function() {
         let toAddr = document.getElementById('destination_select').value;
-        if(toAddr === "WRITE_OWN") toAddr = document.getElementById('custom_destination').value;
+        if(toAddr === "WRITE_OWN") {
+            toAddr = document.getElementById('custom_destination').value || "Kiritilmadi";
+        }
         
         const orderData = {
             lat: parseFloat(userLat),
@@ -85,9 +93,10 @@
             from: String(addressName),
             to: String(toAddr)
         };
-        
-        tg.sendData(JSON.stringify(orderData)); // Botga jo'natish
-        setTimeout(() => tg.close(), 100);
+
+        // Telegramga yuborish
+        tg.sendData(JSON.stringify(orderData));
+        tg.close();
     };
 </script>
 </body>

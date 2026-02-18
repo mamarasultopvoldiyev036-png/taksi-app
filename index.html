@@ -148,15 +148,71 @@
             width: 10px;
             height: 10px;
             border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .gps-signal.active {
             background: var(--success);
             box-shadow: 0 0 0 3px rgba(0,204,102,0.3);
             animation: pulse 2s infinite;
         }
 
+        .gps-signal.inactive {
+            background: var(--danger);
+            box-shadow: 0 0 0 3px rgba(255,68,68,0.3);
+        }
+
+        .gps-signal.searching {
+            background: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255,153,0,0.3);
+            animation: pulse 1s infinite;
+        }
+
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(0,204,102,0.5); }
-            70% { box-shadow: 0 0 0 10px rgba(0,204,102,0); }
-            100% { box-shadow: 0 0 0 0 rgba(0,204,102,0); }
+            0% { box-shadow: 0 0 0 0 rgba(255,153,0,0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(255,153,0,0); }
+            100% { box-shadow: 0 0 0 0 rgba(255,153,0,0); }
+        }
+
+        /* GPS Status Card */
+        .gps-status-card {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .gps-status-icon {
+            font-size: 24px;
+        }
+
+        .gps-status-text {
+            flex: 1;
+        }
+
+        .gps-status-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .gps-status-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .retry-btn {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
         }
 
         /* Content */
@@ -515,6 +571,27 @@
             gap: 5px;
             margin-top: 5px;
         }
+
+        /* Manual Location */
+        .manual-location {
+            background: rgba(255,153,0,0.1);
+            border-radius: 15px;
+            padding: 12px;
+            margin: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .manual-location button {
+            background: var(--accent);
+            border: none;
+            color: #000;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -526,8 +603,25 @@
         </h1>
         <div class="header-badge">
             <span>⚡</span>
-            <span>MapTiler Pro | 100k/oy bepul</span>
+            <span>MapTiler Pro | GPS muammosi hal qilindi</span>
         </div>
+    </div>
+
+    <!-- GPS Status Card -->
+    <div class="gps-status-card" id="gpsStatusCard">
+        <div class="gps-status-icon" id="gpsIcon">📍</div>
+        <div class="gps-status-text">
+            <div class="gps-status-title" id="gpsTitle">GPS aniqlanmoqda...</div>
+            <div class="gps-status-desc" id="gpsDesc">Iltimos, kuting yoki joylashuv ruxsatini bering</div>
+        </div>
+        <button class="retry-btn" onclick="retryGPS()" id="retryBtn" style="display: none;">🔄 Qayta urinish</button>
+    </div>
+
+    <!-- Manual Location (hidden by default) -->
+    <div class="manual-location" id="manualLocation" style="display: none;">
+        <span>📍</span>
+        <span style="flex: 1;">GPS ishlamayapti. Manzilni qo'lda tanlang</span>
+        <button onclick="useTashkent()">Toshkent</button>
     </div>
 
     <!-- Map Container -->
@@ -541,7 +635,7 @@
                 <div class="location-text">
                     <div class="location-label">
                         <span>Sizning joylashuvingiz</span>
-                        <div class="gps-signal" id="gps_signal"></div>
+                        <div class="gps-signal searching" id="gpsSignal"></div>
                     </div>
                     <div class="location-address" id="current_address">Aniqlanmoqda...</div>
                 </div>
@@ -573,19 +667,19 @@
 
             <!-- Quick Places -->
             <div class="quick-places">
-                <div class="quick-place" onclick="quickDestination('Xonqiz')">
+                <div class="quick-place" onclick="quickDestination('Xonqiz, Toshkent, O‘zbekiston')">
                     <i>🏘</i>
                     <span>Xonqiz</span>
                 </div>
-                <div class="quick-place" onclick="quickDestination('Chimyon')">
+                <div class="quick-place" onclick="quickDestination('Chimyon, Toshkent, O‘zbekiston')">
                     <i>⛰</i>
                     <span>Chimyon</span>
                 </div>
-                <div class="quick-place" onclick="quickDestination('Mindon')">
+                <div class="quick-place" onclick="quickDestination('Mindon, Toshkent, O‘zbekiston')">
                     <i>🏡</i>
                     <span>Mindon</span>
                 </div>
-                <div class="quick-place" onclick="quickDestination('Toshkent')">
+                <div class="quick-place" onclick="quickDestination('Toshkent, O‘zbekiston')">
                     <i>🏙</i>
                     <span>Toshkent</span>
                 </div>
@@ -683,8 +777,7 @@
         tg.setBackgroundColor('#0a0f1a');
 
         // ==================== MAPTILER KONFIGURATSIYA ====================
-        // BEPUL API KEY - o'zingizning keyingiz bilan almashtirishingiz mumkin
-        // https://cloud.maptiler.com/account/keys/ dan olish mumkin
+        // BEPUL API KEY - https://cloud.maptiler.com/account/keys/ dan oling
         maptilersdk.config.apiKey = 'YOUR_FREE_MAPTILER_API_KEY'; // <-- BU YERGA O'Z KEYINGIZNI YOZING
         
         // Ma'lumotlar
@@ -703,91 +796,161 @@
         const BASE_PRICE = 4000;
         const PRICE_PER_KM = 1500;
         const AVG_SPEED = 30; // km/h
+        
+        // GPS holati
+        let gpsAttempts = 0;
+        const MAX_GPS_ATTEMPTS = 3;
 
-        // ==================== MAPTILER XARITASINI YARATISH ====================
-        async function initMap() {
-            try {
-                map = new maptilersdk.Map({
-                    container: 'map',
-                    style: maptilersdk.MapStyle.STREETS,  // Ko'chalar uslubi
-                    center: [69.2401, 41.2995], // Toshkent
-                    zoom: 13,
-                    navigationControl: true,
-                    geolocateControl: true,
-                    terrain: false
-                });
-
-                map.addControl(new maptilersdk.NavigationControl());
-
-                // GPS joylashuvni olish
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        async (pos) => {
-                            userLat = pos.coords.latitude;
-                            userLon = pos.coords.longitude;
-                            
-                            // Xaritani markazlashtirish
-                            map.flyTo({
-                                center: [userLon, userLat],
-                                zoom: 15,
-                                essential: true
-                            });
-
-                            // User marker
-                            if (userMarker) userMarker.remove();
-                            
-                            userMarker = new maptilersdk.Marker({
-                                color: '#0066cc',
-                                draggable: false
-                            })
-                                .setLngLat([userLon, userLat])
-                                .setPopup(new maptilersdk.Popup().setHTML('Siz shu yerdasiz'))
-                                .addTo(map);
-
-                            // Doira (aniqlik)
-                            map.addLayer({
-                                id: 'accuracy-circle',
-                                type: 'circle',
-                                source: {
-                                    type: 'geojson',
-                                    data: {
-                                        type: 'Feature',
-                                        geometry: {
-                                            type: 'Point',
-                                            coordinates: [userLon, userLat]
-                                        }
-                                    }
-                                },
-                                paint: {
-                                    'circle-radius': 50,
-                                    'circle-color': '#0066cc',
-                                    'circle-opacity': 0.2
-                                }
-                            });
-
-                            // Manzil nomini olish (Reverse Geocoding)
-                            await reverseGeocode(userLat, userLon);
-                            
-                            document.getElementById('order_btn').disabled = false;
-                        },
-                        (error) => {
-                            console.error('GPS xatosi:', error);
-                            showError('GPS aniqlanmadi. Iltimos, joylashuv ruxsatini bering.');
-                            
-                            // Fallback Toshkent
-                            userLat = 41.2995;
-                            userLon = 69.2401;
-                            reverseGeocode(userLat, userLon);
-                        }
-                    );
-                }
-            } catch (e) {
-                console.error('Map xatosi:', e);
-                showError('Xarita yuklanmadi. Sahifani qayta yuklang.');
+        // ==================== GPS NI QAYTA URINISH ====================
+        function retryGPS() {
+            gpsAttempts++;
+            updateGPSStatus('searching', 'GPS qayta urinilmoqda...', 'Iltimos, joylashuv ruxsatini bering');
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    gpsSuccess,
+                    gpsError,
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                showManualLocation();
             }
         }
 
-        // ==================== REVERSE GEOCODING (Koordinatadan manzil) ====================
+        // ==================== GPS MUVAFFAQIYATLI ====================
+        function gpsSuccess(pos) {
+            userLat = pos.coords.latitude;
+            userLon = pos.coords.longitude;
+            
+            console.log('GPS aniqlandi:', userLat, userLon);
+            
+            updateGPSStatus('active', 'GPS aniqlandi', 'Manzil aniqlanmoqda...');
+            
+            // Xaritani yaratish
+            initMapWithLocation(userLat, userLon);
+            
+            // Manzil nomini olish
+            reverseGeocode(userLat, userLon);
+            
+            // Tugmani faollashtirish
+            document.getElementById('order_btn').disabled = false;
+            document.getElementById('retryBtn').style.display = 'none';
+            document.getElementById('manualLocation').style.display = 'none';
+        }
+
+        // ==================== GPS XATOLIK ====================
+        function gpsError(error) {
+            console.error('GPS xatosi:', error);
+            
+            let errorMessage = '';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'Joylashuv ruxsati berilmadi';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'GPS signali topilmadi';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'GPS vaqti tugadi';
+                    break;
+                default:
+                    errorMessage = 'Noma\'lum xatolik';
+            }
+            
+            updateGPSStatus('inactive', 'GPS xatosi', errorMessage);
+            
+            if (gpsAttempts < MAX_GPS_ATTEMPTS) {
+                document.getElementById('retryBtn').style.display = 'block';
+            } else {
+                showManualLocation();
+            }
+        }
+
+        // ==================== GPS STATUS YANGILASH ====================
+        function updateGPSStatus(status, title, desc) {
+            const signal = document.getElementById('gpsSignal');
+            const icon = document.getElementById('gpsIcon');
+            const titleEl = document.getElementById('gpsTitle');
+            const descEl = document.getElementById('gpsDesc');
+            
+            signal.className = 'gps-signal';
+            signal.classList.add(status);
+            
+            titleEl.textContent = title;
+            descEl.textContent = desc;
+            
+            if (status === 'active') {
+                icon.innerHTML = '✅';
+            } else if (status === 'searching') {
+                icon.innerHTML = '🔄';
+            } else {
+                icon.innerHTML = '❌';
+            }
+        }
+
+        // ==================== MANUAL LOCATION ====================
+        function showManualLocation() {
+            document.getElementById('manualLocation').style.display = 'flex';
+            document.getElementById('retryBtn').style.display = 'none';
+            updateGPSStatus('inactive', 'GPS ishlamayapti', 'Manzilni qo\'lda tanlang');
+        }
+
+        function useTashkent() {
+            userLat = 41.2995;
+            userLon = 69.2401;
+            
+            updateGPSStatus('active', 'Toshkent tanlandi', 'Standart joylashuv');
+            
+            initMapWithLocation(userLat, userLon);
+            reverseGeocode(userLat, userLon);
+            
+            document.getElementById('order_btn').disabled = false;
+            document.getElementById('manualLocation').style.display = 'none';
+        }
+
+        // ==================== XARITANI YARATISH ====================
+        function initMapWithLocation(lat, lon) {
+            try {
+                if (!map) {
+                    map = new maptilersdk.Map({
+                        container: 'map',
+                        style: maptilersdk.MapStyle.STREETS,
+                        center: [lon, lat],
+                        zoom: 15,
+                        navigationControl: true,
+                        geolocateControl: true
+                    });
+
+                    map.addControl(new maptilersdk.NavigationControl());
+                } else {
+                    map.flyTo({
+                        center: [lon, lat],
+                        zoom: 15,
+                        essential: true
+                    });
+                }
+
+                // User marker
+                if (userMarker) userMarker.remove();
+                
+                userMarker = new maptilersdk.Marker({
+                    color: '#0066cc',
+                    draggable: false
+                })
+                    .setLngLat([lon, lat])
+                    .setPopup(new maptilersdk.Popup().setHTML('Siz shu yerdasiz'))
+                    .addTo(map);
+
+            } catch (e) {
+                console.error('Xarita yaratish xatosi:', e);
+            }
+        }
+
+        // ==================== MANZIL NOMINI OLISH (Reverse Geocoding) ====================
         async function reverseGeocode(lat, lon) {
             try {
                 const result = await maptiler.geocoding.reverse([lon, lat], {
@@ -821,22 +984,21 @@
             clearTimeout(searchTimeout);
             const query = this.value.trim();
             
-            if (query.length < 3) {
+            if (query.length < 2) {
                 document.getElementById('suggestions').classList.remove('show');
                 return;
             }
             
-            // Loading ko'rsatish
             document.getElementById('loading_indicator').style.display = 'flex';
             
             searchTimeout = setTimeout(async () => {
                 await searchLocations(query);
-            }, 500); // 500ms debounce
+            }, 500);
         });
 
         async function searchLocations(query) {
             try {
-                const result = await maptiler.geocoding.forward(query, {
+                const result = await maptiler.geocoding.forward(query + ', O‘zbekiston', {
                     language: 'uz',
                     limit: 5,
                     proximity: userLat && userLon ? [userLon, userLat] : undefined
@@ -861,13 +1023,11 @@
             
             features.forEach(feature => {
                 const placeName = feature.place_name_uz || feature.place_name;
-                const placeType = feature.place_type[0] || 'joy';
                 
                 let icon = '📍';
-                if (placeType.includes('city')) icon = '🏙';
-                else if (placeType.includes('town')) icon = '🏘';
-                else if (placeType.includes('village')) icon = '🏡';
-                else if (placeType.includes('mountain')) icon = '⛰';
+                if (feature.place_type[0] === 'city') icon = '🏙';
+                else if (feature.place_type[0] === 'town') icon = '🏘';
+                else if (feature.place_type[0] === 'village') icon = '🏡';
                 
                 const div = document.createElement('div');
                 div.className = 'suggestion-item';
@@ -896,29 +1056,29 @@
             selectedDestination = name;
             selectedCoords = { lat, lon };
             
-            // Inputni to'ldirish
             document.getElementById('destination_input').value = name.split(',')[0];
             document.getElementById('suggestions').classList.remove('show');
             
-            // Tanlangan manzilni ko'rsatish
             document.getElementById('selected_destination_name').innerHTML = name.split(',')[0];
             document.getElementById('selected_destination_coords').innerHTML = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
             document.getElementById('selected_destination_section').style.display = 'block';
             
-            // Xaritada ko'rsatish
             showDestinationOnMap(lat, lon, name);
             
-            // Masofani hisoblash
-            calculateDistance(lat, lon);
+            if (userLat && userLon) {
+                calculateDistance(lat, lon);
+            } else {
+                showError('Avval joylashuvingiz aniqlanishi kerak');
+            }
         }
 
-        function quickDestination(name) {
-            searchLocations(name + ', O‘zbekiston');
+        function quickDestination(query) {
+            document.getElementById('destination_input').value = query.split(',')[0];
+            searchLocations(query);
         }
 
         // ==================== XARITADA KO'RSATISH ====================
         function showDestinationOnMap(lat, lon, name) {
-            // Marker
             if (destMarker) destMarker.remove();
             
             destMarker = new maptilersdk.Marker({
@@ -928,7 +1088,6 @@
                 .setPopup(new maptilersdk.Popup().setHTML(`🏁 ${name}`))
                 .addTo(map);
 
-            // Route chizig'i
             if (userLat && userLon) {
                 if (routeLine) routeLine.remove();
                 
@@ -961,7 +1120,6 @@
                     }
                 });
 
-                // Ikkala nuqtani ko'rsatish
                 const bounds = new maptilersdk.LngLatBounds()
                     .extend([userLon, userLat])
                     .extend([lon, lat]);
@@ -974,8 +1132,8 @@
         function calculateDistance(destLat, destLon) {
             if (!userLat || !userLon || !destLat || !destLon) return;
 
-            // Haversine formulasi bilan masofa hisoblash
-            const R = 6371; // Yer radiusi (km)
+            // Haversine formulasi
+            const R = 6371;
             const dLat = (destLat - userLat) * Math.PI / 180;
             const dLon = (destLon - userLon) * Math.PI / 180;
             const a = 
@@ -985,14 +1143,10 @@
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             const distance = R * c;
 
-            // Narx hisoblash
             const distancePrice = distance * PRICE_PER_KM;
             const totalPrice = BASE_PRICE + distancePrice;
-            
-            // Vaqt hisoblash
             const timeMinutes = Math.round((distance / AVG_SPEED) * 60);
 
-            // UI yangilash
             document.getElementById('distance_value').textContent = distance.toFixed(1);
             document.getElementById('distance_price').textContent = Math.round(distancePrice / 100) * 100 + ' so\'m';
             document.getElementById('total_price').textContent = Math.round(totalPrice / 100) * 100 + ' so\'m';
@@ -1008,12 +1162,16 @@
                 return;
             }
 
+            if (!userLat || !userLon) {
+                showError('Joylashuvingiz aniqlanmadi!');
+                return;
+            }
+
             const btn = document.getElementById('order_btn');
             btn.classList.add('loading');
             btn.disabled = true;
 
             try {
-                // Hisoblangan ma'lumotlar
                 const distance = parseFloat(document.getElementById('distance_value').textContent);
                 const price = parseInt(document.getElementById('total_price').textContent.replace(/[^0-9]/g, ''));
                 
@@ -1021,7 +1179,7 @@
                     lat: userLat,
                     lon: userLon,
                     from: userAddress,
-                    to: selectedDestination,
+                    to: selectedDestination.split(',')[0],
                     to_lat: selectedCoords.lat,
                     to_lon: selectedCoords.lon,
                     distance: distance.toFixed(1),
@@ -1029,7 +1187,6 @@
                     time: document.getElementById('estimated_time').textContent
                 };
 
-                // Telegramga yuborish
                 tg.sendData(JSON.stringify(orderData));
                 
                 showSuccess('✅ Buyurtma yuborildi!');
@@ -1074,10 +1231,20 @@
             setTimeout(() => el.classList.remove('show'), 2000);
         }
 
+        // ==================== BOSHLASH ====================
+        function init() {
+            // GPS ni boshlash
+            if (navigator.geolocation) {
+                retryGPS();
+            } else {
+                showManualLocation();
+            }
+        }
+
         // Clear button
         document.querySelector('.clear-btn').onclick = clearDestination;
 
-        // Click outside to close suggestions
+        // Click outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.search-input') && !e.target.closest('.suggestions')) {
                 document.getElementById('suggestions').classList.remove('show');
@@ -1095,7 +1262,7 @@
         });
 
         // Boshlash
-        initMap();
+        init();
     </script>
 </body>
 </html>

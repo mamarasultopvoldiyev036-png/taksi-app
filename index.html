@@ -340,6 +340,56 @@
             margin-left: 4px;
         }
         
+        /* Promo Code */
+        .promo-section {
+            background: var(--card);
+            padding: 15px 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 1px dashed var(--primary);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .promo-section:hover {
+            background: #f8f9fa;
+        }
+        
+        .promo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .promo-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .promo-input {
+            display: none;
+            margin-top: 15px;
+        }
+        
+        .promo-input.active {
+            display: block;
+        }
+        
+        .apply-promo {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+            width: 100%;
+            cursor: pointer;
+        }
+        
         /* Button */
         .btn-order {
             width: 100%;
@@ -571,6 +621,20 @@
             </div>
         </div>
         
+        <div class="promo-section" id="promo_section">
+            <div class="promo-header" onclick="togglePromo()">
+                <div class="promo-title">
+                    <span>🎫</span>
+                    <span>Promokod</span>
+                </div>
+                <span style="color: var(--primary);">▼</span>
+            </div>
+            <div class="promo-input" id="promo_input">
+                <input type="text" id="promo_code" placeholder="Promokodni kiriting...">
+                <button class="apply-promo" onclick="applyPromo()">Tekshirish</button>
+            </div>
+        </div>
+        
         <div class="price-estimate" id="price_section">
             <div class="price-label">
                 <span>💰</span>
@@ -579,6 +643,7 @@
             <div>
                 <span class="price-value" id="estimated_price">4,000</span>
                 <span class="price-unit">so'm</span>
+                <div style="font-size: 12px; color: #a0a5b8;" id="distance_info">(1.0 km)</div>
             </div>
         </div>
     </div>
@@ -594,18 +659,22 @@
     </div>
 
     <script>
+        // Telegram Web App init
         let tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
 
+        // Global o'zgaruvchilar
         let userLat = null;
         let userLon = null;
         let villageName = "Noma'lum qishloq";
         let fullAddress = "";
         let selectedDestination = "haydovchiga";
-        let customDestination = "";
+        let currentDiscount = 0;
+        let appliedPromo = null;
         let map, marker;
         
+        // Narx konstantaLARI
         const BASE_PRICE = 4000;
         const PRICE_PER_KM = 1500;
         
@@ -634,34 +703,105 @@
             selectDestination('haydovchiga');
         }
         
+        function togglePromo() {
+            const promoInput = document.getElementById('promo_input');
+            promoInput.classList.toggle('active');
+        }
+        
+        function applyPromo() {
+            const promoCode = document.getElementById('promo_code').value.toUpperCase().trim();
+            
+            if (!promoCode) {
+                showError("Promokodni kiriting!");
+                return;
+            }
+            
+            // Promokodlarni tekshirish (bot bilan sinxron)
+            const validPromos = {
+                "WELCOME10": 10,
+                "TAKSI20": 20,
+                "BONUS15": 15,
+                "NEWYEAR25": 25,
+                "START1KM": 5
+            };
+            
+            if (validPromos[promoCode]) {
+                currentDiscount = validPromos[promoCode];
+                appliedPromo = promoCode;
+                document.getElementById('promo_code').style.borderColor = '#2ecc71';
+                showSuccess(`✅ ${currentDiscount}% chegirma qo'llandi!`);
+                updatePriceEstimate();
+                
+                setTimeout(() => {
+                    document.getElementById('promo_input').classList.remove('active');
+                }, 1500);
+            } else {
+                document.getElementById('promo_code').style.borderColor = '#e74c3c';
+                showError("❌ Noto'g'ri promokod!");
+                currentDiscount = 0;
+                appliedPromo = null;
+            }
+        }
+        
         function updatePriceEstimate() {
-            let distance = 1.0;
+            const destination = getDestination();
+            if (!destination || destination === "Tanlang..." || !userLat || !userLon) {
+                return;
+            }
             
-            if (selectedDestination === 'xonqiz') distance = 5.2;
-            else if (selectedDestination === 'qorgontepa') distance = 4.8;
-            else if (selectedDestination === 'chimyon') distance = 8.7;
-            else if (selectedDestination === 'mindon') distance = 3.5;
+            // Turli manzillar uchun taxminiy masofalar (km)
+            const distances = {
+                "xonqiz": 5.2,
+                "chimyon": 8.7,
+                "mindon": 3.5,
+                "qorgontepa": 4.8,
+                "haydovchiga": 1.0
+            };
             
-            let extra_km = Math.max(0, distance - 1);
-            let price = BASE_PRICE + (extra_km * PRICE_PER_KM);
-            price = Math.round(price / 100) * 100;
+            let distance = distances[selectedDestination] || 1.0;
+            let price = calculatePrice(distance);
             
             document.getElementById('estimated_price').textContent = price.toLocaleString();
+            document.getElementById('distance_info').innerHTML = `(${distance.toFixed(1)} km)`;
+        }
+        
+        function calculatePrice(distance) {
+            // 1 km uchun: BASE_PRICE
+            // 2 km uchun: BASE_PRICE + (1 * PRICE_PER_KM)
+            let extra_km = Math.max(0, distance - 1);
+            let price = BASE_PRICE + (extra_km * PRICE_PER_KM);
+            
+            // Promokod chegirmasi
+            if (currentDiscount > 0) {
+                price = price * (100 - currentDiscount) / 100;
+            }
+            
+            // 100 so'mga yaxlitlash
+            return Math.round(price / 100) * 100;
+        }
+        
+        function getDestination() {
+            if (selectedDestination === 'custom') {
+                return document.getElementById('custom_destination').value;
+            }
+            return selectedDestination;
         }
         
         function showError(message) {
+            const errorDiv = document.getElementById('error_message');
             document.getElementById('error_text').innerText = message;
-            document.getElementById('error_message').classList.add('show');
+            errorDiv.classList.add('show');
             setTimeout(() => {
-                document.getElementById('error_message').classList.remove('show');
+                errorDiv.classList.remove('show');
             }, 3000);
         }
         
         function showSuccess(message) {
+            const successDiv = document.getElementById('success_message');
             document.getElementById('success_text').innerText = message;
-            document.getElementById('success_message').classList.add('show');
+            successDiv.classList.add('show');
             setTimeout(() => {
-                document.getElementById('success_message').classList.remove('show');
+                successDiv.classList.remove('show');
             }, 2000);
         }
         
@@ -686,7 +826,6 @@
                                    data.address.town || 
                                    data.address.city || 
                                    data.address.county ||
-                                   data.address.state_district ||
                                    "Noma'lum qishloq";
                     
                     const area = data.address.state || "O'zbekiston";
@@ -742,6 +881,7 @@
                 document.getElementById('status_desc').innerHTML = villageName;
                 
                 document.getElementById('send_btn').disabled = false;
+                updatePriceEstimate();
                 
             }, (err) => {
                 let errorMessage = "GPS ruxsati berilmadi";
@@ -768,11 +908,13 @@
         async function sendOrder() {
             const btn = document.getElementById('send_btn');
             
+            // Tekshirish
             if (!userLat || !userLon) {
                 showError("Joylashuvingiz aniqlanmadi!");
                 return;
             }
             
+            // Boradigan joyni aniqlash
             let toAddress = "";
             
             if (selectedDestination === "haydovchiga") {
@@ -792,19 +934,33 @@
                 }
             }
             
+            // Masofani aniqlash
+            const distances = {
+                "xonqiz": 5.2,
+                "chimyon": 8.7,
+                "mindon": 3.5,
+                "qorgontepa": 4.8,
+                "haydovchiga": 1.0
+            };
+            let distance = distances[selectedDestination] || 1.0;
+            
             setLoading(btn, true);
             
             try {
+                // Botga yuboriladigan ma'lumotlar
                 const orderData = {
                     lat: userLat,
                     lon: userLon,
                     from: villageName,
-                    to: toAddress
+                    to: toAddress,
+                    distance: distance,
+                    duration: Math.round(distance * 3), // 3 min/km
+                    promo: appliedPromo || ""
                 };
 
                 console.log("Yuborilayotgan ma'lumot:", orderData);
                 
-                // Telegramga yuborish - BU BOTINGIZGA MOS
+                // Telegramga yuborish
                 tg.sendData(JSON.stringify(orderData));
                 
                 showSuccess("✅ Buyurtma yuborildi!");
@@ -820,9 +976,18 @@
             }
         }
         
+        // Enter tugmasi bilan yuborish
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const btn = document.getElementById('send_btn');
+                if (!btn.disabled) {
+                    sendOrder();
+                }
+            }
+        });
+        
         // Standart tanlov
         selectDestination('haydovchiga');
-        updatePriceEstimate();
     </script>
 </body>
 </html>

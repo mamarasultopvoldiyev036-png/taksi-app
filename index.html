@@ -618,10 +618,10 @@
             </div>
             
             <div class="destination-grid">
-                <div class="dest-card" onclick="selectDestination('haydovchiga')" id="dest_haydovchiga">
-                    <div class="dest-icon">🚖</div>
-                    <div class="dest-name">Aytaman</div>
-                    <div class="dest-price">Haydovchiga</div>
+                <div class="dest-card" onclick="selectDestination('kursatma')" id="dest_kursatma">
+                    <div class="dest-icon">🗺️</div>
+                    <div class="dest-name">Ko'rsatma</div>
+                    <div class="dest-price">Bo'yicha</div>
                 </div>
                 
                 <div class="dest-card" onclick="selectDestination('xonqiz')" id="dest_xonqiz">
@@ -719,7 +719,7 @@
         let userLng = null;
         let villageName = "Noma'lum";
         let fullAddress = "";
-        let selectedDestination = "haydovchiga";
+        let selectedDestination = "kursatma";
         let currentDiscount = 0;
         let appliedPromo = null;
         let map, marker;
@@ -730,7 +730,7 @@
         
         // Masofalar (km)
         const DISTANCES = {
-            'haydovchiga': 1.0,
+            'kursatma': 1.0,
             'xonqiz': 5.2,
             'qorgontepa': 4.8,
             'chimyon': 8.7,
@@ -980,8 +980,8 @@
                 // Boradigan joyni aniqlash
                 let destination = "";
                 
-                if (selectedDestination === "haydovchiga") {
-                    destination = "Haydovchiga aytaman";
+                if (selectedDestination === "kursatma") {
+                    destination = "Ko'rsatma bo'yicha";
                 } else if (selectedDestination === "xonqiz") {
                     destination = "Xonqiz qishlog'i";
                 } else if (selectedDestination === "qorgontepa") {
@@ -993,7 +993,7 @@
                 } else if (selectedDestination === "custom") {
                     destination = document.getElementById('custom_destination').value.trim();
                     if (!destination) {
-                        destination = "Haydovchiga aytaman";
+                        destination = "Ko'rsatma bo'yicha";
                     }
                 }
                 
@@ -1040,7 +1040,7 @@
         });
         
         // Standart tanlov
-        selectDestination('haydovchiga');
+        selectDestination('kursatma');
     </script>
 </body>
 </html>
